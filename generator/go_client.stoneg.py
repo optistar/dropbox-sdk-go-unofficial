@@ -134,7 +134,7 @@ class GoClientBackend(CodeBackend):
                 out("var appErr {fn}APIError".format(fn=fn))
                 out("err = {auth}ParseError(err, &appErr)".format(
                     auth="auth." if namespace.name != "auth" else ""))
-                with self.block("if err == &appErr"):
+                with self.block("if errors.Is(err, &appErr)"):
                     out("err = appErr")
                 out("return")
             out()
