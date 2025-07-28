@@ -21,7 +21,9 @@
 package team_log
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"io"
 
 	"github.com/dropbox/dropbox-sdk-go-unofficial/v6/dropbox"
@@ -41,20 +43,22 @@ type Client interface {
 	// </developers/documentation/http/teams#team-features-get_values> to check
 	// for this feature. Permission : Team Auditing.
 	GetEvents(arg *GetTeamEventsArg) (res *GetTeamEventsResult, err error)
+	GetEventsContext(ctx context.Context, arg *GetTeamEventsArg) (res *GetTeamEventsResult, err error)
 	// GetEventsContinue : Once a cursor has been retrieved from `getEvents`,
 	// use this to paginate through all events. Permission : Team Auditing.
 	GetEventsContinue(arg *GetTeamEventsContinueArg) (res *GetTeamEventsResult, err error)
+	GetEventsContinueContext(ctx context.Context, arg *GetTeamEventsContinueArg) (res *GetTeamEventsResult, err error)
 }
 
 type apiImpl dropbox.Context
 
-//GetEventsAPIError is an error-wrapper for the get_events route
+// GetEventsAPIError is an error-wrapper for the get_events route
 type GetEventsAPIError struct {
 	dropbox.APIError
 	EndpointError *GetTeamEventsError `json:"error"`
 }
 
-func (dbx *apiImpl) GetEvents(arg *GetTeamEventsArg) (res *GetTeamEventsResult, err error) {
+func (dbx *apiImpl) GetEventsContext(ctx context.Context, arg *GetTeamEventsArg) (res *GetTeamEventsResult, err error) {
 	req := dropbox.Request{
 		Host:         "api",
 		Namespace:    "team_log",
@@ -67,11 +71,11 @@ func (dbx *apiImpl) GetEvents(arg *GetTeamEventsArg) (res *GetTeamEventsResult, 
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr GetEventsAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -86,13 +90,17 @@ func (dbx *apiImpl) GetEvents(arg *GetTeamEventsArg) (res *GetTeamEventsResult, 
 	return
 }
 
-//GetEventsContinueAPIError is an error-wrapper for the get_events/continue route
+func (dbx *apiImpl) GetEvents(arg *GetTeamEventsArg) (res *GetTeamEventsResult, err error) {
+	return dbx.GetEventsContext(context.Background(), arg)
+}
+
+// GetEventsContinueAPIError is an error-wrapper for the get_events/continue route
 type GetEventsContinueAPIError struct {
 	dropbox.APIError
 	EndpointError *GetTeamEventsContinueError `json:"error"`
 }
 
-func (dbx *apiImpl) GetEventsContinue(arg *GetTeamEventsContinueArg) (res *GetTeamEventsResult, err error) {
+func (dbx *apiImpl) GetEventsContinueContext(ctx context.Context, arg *GetTeamEventsContinueArg) (res *GetTeamEventsResult, err error) {
 	req := dropbox.Request{
 		Host:         "api",
 		Namespace:    "team_log",
@@ -105,11 +113,11 @@ func (dbx *apiImpl) GetEventsContinue(arg *GetTeamEventsContinueArg) (res *GetTe
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr GetEventsContinueAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -122,6 +130,10 @@ func (dbx *apiImpl) GetEventsContinue(arg *GetTeamEventsContinueArg) (res *GetTe
 
 	_ = respBody
 	return
+}
+
+func (dbx *apiImpl) GetEventsContinue(arg *GetTeamEventsContinueArg) (res *GetTeamEventsResult, err error) {
+	return dbx.GetEventsContinueContext(context.Background(), arg)
 }
 
 // New returns a Client implementation for this namespace

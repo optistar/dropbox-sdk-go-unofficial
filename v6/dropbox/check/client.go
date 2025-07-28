@@ -21,7 +21,9 @@
 package check
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"io"
 
 	"github.com/dropbox/dropbox-sdk-go-unofficial/v6/dropbox"
@@ -37,6 +39,7 @@ type Client interface {
 	// least part of the Dropbox API infrastructure is working and that the app
 	// key and secret valid.
 	App(arg *EchoArg) (res *EchoResult, err error)
+	AppContext(ctx context.Context, arg *EchoArg) (res *EchoResult, err error)
 	// User : This endpoint performs User Authentication, validating the
 	// supplied access token, and returns the supplied string, to allow you to
 	// test your code and connection to the Dropbox API. It has no other effect.
@@ -44,17 +47,18 @@ type Client interface {
 	// at least part of the Dropbox API infrastructure is working and that the
 	// access token is valid.
 	User(arg *EchoArg) (res *EchoResult, err error)
+	UserContext(ctx context.Context, arg *EchoArg) (res *EchoResult, err error)
 }
 
 type apiImpl dropbox.Context
 
-//AppAPIError is an error-wrapper for the app route
+// AppAPIError is an error-wrapper for the app route
 type AppAPIError struct {
 	dropbox.APIError
 	EndpointError struct{} `json:"error"`
 }
 
-func (dbx *apiImpl) App(arg *EchoArg) (res *EchoResult, err error) {
+func (dbx *apiImpl) AppContext(ctx context.Context, arg *EchoArg) (res *EchoResult, err error) {
 	req := dropbox.Request{
 		Host:         "api",
 		Namespace:    "check",
@@ -67,11 +71,11 @@ func (dbx *apiImpl) App(arg *EchoArg) (res *EchoResult, err error) {
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr AppAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -86,13 +90,17 @@ func (dbx *apiImpl) App(arg *EchoArg) (res *EchoResult, err error) {
 	return
 }
 
-//UserAPIError is an error-wrapper for the user route
+func (dbx *apiImpl) App(arg *EchoArg) (res *EchoResult, err error) {
+	return dbx.AppContext(context.Background(), arg)
+}
+
+// UserAPIError is an error-wrapper for the user route
 type UserAPIError struct {
 	dropbox.APIError
 	EndpointError struct{} `json:"error"`
 }
 
-func (dbx *apiImpl) User(arg *EchoArg) (res *EchoResult, err error) {
+func (dbx *apiImpl) UserContext(ctx context.Context, arg *EchoArg) (res *EchoResult, err error) {
 	req := dropbox.Request{
 		Host:         "api",
 		Namespace:    "check",
@@ -105,11 +113,11 @@ func (dbx *apiImpl) User(arg *EchoArg) (res *EchoResult, err error) {
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr UserAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -122,6 +130,10 @@ func (dbx *apiImpl) User(arg *EchoArg) (res *EchoResult, err error) {
 
 	_ = respBody
 	return
+}
+
+func (dbx *apiImpl) User(arg *EchoArg) (res *EchoResult, err error) {
+	return dbx.UserContext(context.Background(), arg)
 }
 
 // New returns a Client implementation for this namespace

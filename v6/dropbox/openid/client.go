@@ -21,7 +21,9 @@
 package openid
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"io"
 
 	"github.com/dropbox/dropbox-sdk-go-unofficial/v6/dropbox"
@@ -34,17 +36,18 @@ type Client interface {
 	// the id_token during the OIDC flow. This route doesn't require any
 	// arguments and will use the scopes approved for the given access token.
 	Userinfo(arg *UserInfoArgs) (res *UserInfoResult, err error)
+	UserinfoContext(ctx context.Context, arg *UserInfoArgs) (res *UserInfoResult, err error)
 }
 
 type apiImpl dropbox.Context
 
-//UserinfoAPIError is an error-wrapper for the userinfo route
+// UserinfoAPIError is an error-wrapper for the userinfo route
 type UserinfoAPIError struct {
 	dropbox.APIError
 	EndpointError *UserInfoError `json:"error"`
 }
 
-func (dbx *apiImpl) Userinfo(arg *UserInfoArgs) (res *UserInfoResult, err error) {
+func (dbx *apiImpl) UserinfoContext(ctx context.Context, arg *UserInfoArgs) (res *UserInfoResult, err error) {
 	req := dropbox.Request{
 		Host:         "api",
 		Namespace:    "openid",
@@ -57,11 +60,11 @@ func (dbx *apiImpl) Userinfo(arg *UserInfoArgs) (res *UserInfoResult, err error)
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr UserinfoAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -74,6 +77,10 @@ func (dbx *apiImpl) Userinfo(arg *UserInfoArgs) (res *UserInfoResult, err error)
 
 	_ = respBody
 	return
+}
+
+func (dbx *apiImpl) Userinfo(arg *UserInfoArgs) (res *UserInfoResult, err error) {
+	return dbx.UserinfoContext(context.Background(), arg)
 }
 
 // New returns a Client implementation for this namespace

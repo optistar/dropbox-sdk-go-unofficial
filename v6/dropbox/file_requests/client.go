@@ -21,7 +21,9 @@
 package file_requests
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"io"
 
 	"github.com/dropbox/dropbox-sdk-go-unofficial/v6/dropbox"
@@ -33,39 +35,48 @@ type Client interface {
 	// Count : Returns the total number of file requests owned by this user.
 	// Includes both open and closed file requests.
 	Count() (res *CountFileRequestsResult, err error)
+	CountContext(ctx context.Context) (res *CountFileRequestsResult, err error)
 	// Create : Creates a file request for this user.
 	Create(arg *CreateFileRequestArgs) (res *FileRequest, err error)
+	CreateContext(ctx context.Context, arg *CreateFileRequestArgs) (res *FileRequest, err error)
 	// Delete : Delete a batch of closed file requests.
 	Delete(arg *DeleteFileRequestArgs) (res *DeleteFileRequestsResult, err error)
+	DeleteContext(ctx context.Context, arg *DeleteFileRequestArgs) (res *DeleteFileRequestsResult, err error)
 	// DeleteAllClosed : Delete all closed file requests owned by this user.
 	DeleteAllClosed() (res *DeleteAllClosedFileRequestsResult, err error)
+	DeleteAllClosedContext(ctx context.Context) (res *DeleteAllClosedFileRequestsResult, err error)
 	// Get : Returns the specified file request.
 	Get(arg *GetFileRequestArgs) (res *FileRequest, err error)
-	// List : Returns a list of file requests owned by this user. For apps with
-	// the app folder permission, this will only return file requests with
-	// destinations in the app folder.
-	ListV2(arg *ListFileRequestsArg) (res *ListFileRequestsV2Result, err error)
+	GetContext(ctx context.Context, arg *GetFileRequestArgs) (res *FileRequest, err error)
 	// List : Returns a list of file requests owned by this user. For apps with
 	// the app folder permission, this will only return file requests with
 	// destinations in the app folder.
 	List() (res *ListFileRequestsResult, err error)
+	ListContext(ctx context.Context) (res *ListFileRequestsResult, err error)
+	// List : Returns a list of file requests owned by this user. For apps with
+	// the app folder permission, this will only return file requests with
+	// destinations in the app folder.
+	ListV2(arg *ListFileRequestsArg) (res *ListFileRequestsV2Result, err error)
+	ListV2Context(ctx context.Context, arg *ListFileRequestsArg) (res *ListFileRequestsV2Result, err error)
 	// ListContinue : Once a cursor has been retrieved from `list`, use this to
 	// paginate through all file requests. The cursor must come from a previous
 	// call to `list` or `listContinue`.
 	ListContinue(arg *ListFileRequestsContinueArg) (res *ListFileRequestsV2Result, err error)
+	ListContinueContext(ctx context.Context, arg *ListFileRequestsContinueArg) (res *ListFileRequestsV2Result, err error)
 	// Update : Update a file request.
 	Update(arg *UpdateFileRequestArgs) (res *FileRequest, err error)
+	UpdateContext(ctx context.Context, arg *UpdateFileRequestArgs) (res *FileRequest, err error)
 }
 
 type apiImpl dropbox.Context
 
-//CountAPIError is an error-wrapper for the count route
+// CountAPIError is an error-wrapper for the count route
 type CountAPIError struct {
 	dropbox.APIError
 	EndpointError *CountFileRequestsError `json:"error"`
 }
 
-func (dbx *apiImpl) Count() (res *CountFileRequestsResult, err error) {
+func (dbx *apiImpl) CountContext(ctx context.Context) (res *CountFileRequestsResult, err error) {
 	req := dropbox.Request{
 		Host:         "api",
 		Namespace:    "file_requests",
@@ -78,11 +89,11 @@ func (dbx *apiImpl) Count() (res *CountFileRequestsResult, err error) {
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr CountAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -97,13 +108,17 @@ func (dbx *apiImpl) Count() (res *CountFileRequestsResult, err error) {
 	return
 }
 
-//CreateAPIError is an error-wrapper for the create route
+func (dbx *apiImpl) Count() (res *CountFileRequestsResult, err error) {
+	return dbx.CountContext(context.Background())
+}
+
+// CreateAPIError is an error-wrapper for the create route
 type CreateAPIError struct {
 	dropbox.APIError
 	EndpointError *CreateFileRequestError `json:"error"`
 }
 
-func (dbx *apiImpl) Create(arg *CreateFileRequestArgs) (res *FileRequest, err error) {
+func (dbx *apiImpl) CreateContext(ctx context.Context, arg *CreateFileRequestArgs) (res *FileRequest, err error) {
 	req := dropbox.Request{
 		Host:         "api",
 		Namespace:    "file_requests",
@@ -116,11 +131,11 @@ func (dbx *apiImpl) Create(arg *CreateFileRequestArgs) (res *FileRequest, err er
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr CreateAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -135,13 +150,17 @@ func (dbx *apiImpl) Create(arg *CreateFileRequestArgs) (res *FileRequest, err er
 	return
 }
 
-//DeleteAPIError is an error-wrapper for the delete route
+func (dbx *apiImpl) Create(arg *CreateFileRequestArgs) (res *FileRequest, err error) {
+	return dbx.CreateContext(context.Background(), arg)
+}
+
+// DeleteAPIError is an error-wrapper for the delete route
 type DeleteAPIError struct {
 	dropbox.APIError
 	EndpointError *DeleteFileRequestError `json:"error"`
 }
 
-func (dbx *apiImpl) Delete(arg *DeleteFileRequestArgs) (res *DeleteFileRequestsResult, err error) {
+func (dbx *apiImpl) DeleteContext(ctx context.Context, arg *DeleteFileRequestArgs) (res *DeleteFileRequestsResult, err error) {
 	req := dropbox.Request{
 		Host:         "api",
 		Namespace:    "file_requests",
@@ -154,11 +173,11 @@ func (dbx *apiImpl) Delete(arg *DeleteFileRequestArgs) (res *DeleteFileRequestsR
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr DeleteAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -173,13 +192,17 @@ func (dbx *apiImpl) Delete(arg *DeleteFileRequestArgs) (res *DeleteFileRequestsR
 	return
 }
 
-//DeleteAllClosedAPIError is an error-wrapper for the delete_all_closed route
+func (dbx *apiImpl) Delete(arg *DeleteFileRequestArgs) (res *DeleteFileRequestsResult, err error) {
+	return dbx.DeleteContext(context.Background(), arg)
+}
+
+// DeleteAllClosedAPIError is an error-wrapper for the delete_all_closed route
 type DeleteAllClosedAPIError struct {
 	dropbox.APIError
 	EndpointError *DeleteAllClosedFileRequestsError `json:"error"`
 }
 
-func (dbx *apiImpl) DeleteAllClosed() (res *DeleteAllClosedFileRequestsResult, err error) {
+func (dbx *apiImpl) DeleteAllClosedContext(ctx context.Context) (res *DeleteAllClosedFileRequestsResult, err error) {
 	req := dropbox.Request{
 		Host:         "api",
 		Namespace:    "file_requests",
@@ -192,11 +215,11 @@ func (dbx *apiImpl) DeleteAllClosed() (res *DeleteAllClosedFileRequestsResult, e
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr DeleteAllClosedAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -211,13 +234,17 @@ func (dbx *apiImpl) DeleteAllClosed() (res *DeleteAllClosedFileRequestsResult, e
 	return
 }
 
-//GetAPIError is an error-wrapper for the get route
+func (dbx *apiImpl) DeleteAllClosed() (res *DeleteAllClosedFileRequestsResult, err error) {
+	return dbx.DeleteAllClosedContext(context.Background())
+}
+
+// GetAPIError is an error-wrapper for the get route
 type GetAPIError struct {
 	dropbox.APIError
 	EndpointError *GetFileRequestError `json:"error"`
 }
 
-func (dbx *apiImpl) Get(arg *GetFileRequestArgs) (res *FileRequest, err error) {
+func (dbx *apiImpl) GetContext(ctx context.Context, arg *GetFileRequestArgs) (res *FileRequest, err error) {
 	req := dropbox.Request{
 		Host:         "api",
 		Namespace:    "file_requests",
@@ -230,11 +257,11 @@ func (dbx *apiImpl) Get(arg *GetFileRequestArgs) (res *FileRequest, err error) {
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr GetAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -249,51 +276,17 @@ func (dbx *apiImpl) Get(arg *GetFileRequestArgs) (res *FileRequest, err error) {
 	return
 }
 
-//ListV2APIError is an error-wrapper for the list_v2 route
-type ListV2APIError struct {
-	dropbox.APIError
-	EndpointError *ListFileRequestsError `json:"error"`
+func (dbx *apiImpl) Get(arg *GetFileRequestArgs) (res *FileRequest, err error) {
+	return dbx.GetContext(context.Background(), arg)
 }
 
-func (dbx *apiImpl) ListV2(arg *ListFileRequestsArg) (res *ListFileRequestsV2Result, err error) {
-	req := dropbox.Request{
-		Host:         "api",
-		Namespace:    "file_requests",
-		Route:        "list_v2",
-		Auth:         "user",
-		Style:        "rpc",
-		Arg:          arg,
-		ExtraHeaders: nil,
-	}
-
-	var resp []byte
-	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
-	if err != nil {
-		var appErr ListV2APIError
-		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
-			err = appErr
-		}
-		return
-	}
-
-	err = json.Unmarshal(resp, &res)
-	if err != nil {
-		return
-	}
-
-	_ = respBody
-	return
-}
-
-//ListAPIError is an error-wrapper for the list route
+// ListAPIError is an error-wrapper for the list route
 type ListAPIError struct {
 	dropbox.APIError
 	EndpointError *ListFileRequestsError `json:"error"`
 }
 
-func (dbx *apiImpl) List() (res *ListFileRequestsResult, err error) {
+func (dbx *apiImpl) ListContext(ctx context.Context) (res *ListFileRequestsResult, err error) {
 	req := dropbox.Request{
 		Host:         "api",
 		Namespace:    "file_requests",
@@ -306,11 +299,11 @@ func (dbx *apiImpl) List() (res *ListFileRequestsResult, err error) {
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr ListAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -325,13 +318,59 @@ func (dbx *apiImpl) List() (res *ListFileRequestsResult, err error) {
 	return
 }
 
-//ListContinueAPIError is an error-wrapper for the list/continue route
+func (dbx *apiImpl) List() (res *ListFileRequestsResult, err error) {
+	return dbx.ListContext(context.Background())
+}
+
+// ListV2APIError is an error-wrapper for the list_v2 route
+type ListV2APIError struct {
+	dropbox.APIError
+	EndpointError *ListFileRequestsError `json:"error"`
+}
+
+func (dbx *apiImpl) ListV2Context(ctx context.Context, arg *ListFileRequestsArg) (res *ListFileRequestsV2Result, err error) {
+	req := dropbox.Request{
+		Host:         "api",
+		Namespace:    "file_requests",
+		Route:        "list_v2",
+		Auth:         "user",
+		Style:        "rpc",
+		Arg:          arg,
+		ExtraHeaders: nil,
+	}
+
+	var resp []byte
+	var respBody io.ReadCloser
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
+	if err != nil {
+		var appErr ListV2APIError
+		err = auth.ParseError(err, &appErr)
+		if errors.Is(err, &appErr) {
+			err = appErr
+		}
+		return
+	}
+
+	err = json.Unmarshal(resp, &res)
+	if err != nil {
+		return
+	}
+
+	_ = respBody
+	return
+}
+
+func (dbx *apiImpl) ListV2(arg *ListFileRequestsArg) (res *ListFileRequestsV2Result, err error) {
+	return dbx.ListV2Context(context.Background(), arg)
+}
+
+// ListContinueAPIError is an error-wrapper for the list/continue route
 type ListContinueAPIError struct {
 	dropbox.APIError
 	EndpointError *ListFileRequestsContinueError `json:"error"`
 }
 
-func (dbx *apiImpl) ListContinue(arg *ListFileRequestsContinueArg) (res *ListFileRequestsV2Result, err error) {
+func (dbx *apiImpl) ListContinueContext(ctx context.Context, arg *ListFileRequestsContinueArg) (res *ListFileRequestsV2Result, err error) {
 	req := dropbox.Request{
 		Host:         "api",
 		Namespace:    "file_requests",
@@ -344,11 +383,11 @@ func (dbx *apiImpl) ListContinue(arg *ListFileRequestsContinueArg) (res *ListFil
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr ListContinueAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -363,13 +402,17 @@ func (dbx *apiImpl) ListContinue(arg *ListFileRequestsContinueArg) (res *ListFil
 	return
 }
 
-//UpdateAPIError is an error-wrapper for the update route
+func (dbx *apiImpl) ListContinue(arg *ListFileRequestsContinueArg) (res *ListFileRequestsV2Result, err error) {
+	return dbx.ListContinueContext(context.Background(), arg)
+}
+
+// UpdateAPIError is an error-wrapper for the update route
 type UpdateAPIError struct {
 	dropbox.APIError
 	EndpointError *UpdateFileRequestError `json:"error"`
 }
 
-func (dbx *apiImpl) Update(arg *UpdateFileRequestArgs) (res *FileRequest, err error) {
+func (dbx *apiImpl) UpdateContext(ctx context.Context, arg *UpdateFileRequestArgs) (res *FileRequest, err error) {
 	req := dropbox.Request{
 		Host:         "api",
 		Namespace:    "file_requests",
@@ -382,11 +425,11 @@ func (dbx *apiImpl) Update(arg *UpdateFileRequestArgs) (res *FileRequest, err er
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr UpdateAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -399,6 +442,10 @@ func (dbx *apiImpl) Update(arg *UpdateFileRequestArgs) (res *FileRequest, err er
 
 	_ = respBody
 	return
+}
+
+func (dbx *apiImpl) Update(arg *UpdateFileRequestArgs) (res *FileRequest, err error) {
+	return dbx.UpdateContext(context.Background(), arg)
 }
 
 // New returns a Client implementation for this namespace

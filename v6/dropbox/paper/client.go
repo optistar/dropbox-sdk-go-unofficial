@@ -21,7 +21,9 @@
 package paper
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"log"
 
@@ -42,6 +44,7 @@ type Client interface {
 	// for more information.
 	// Deprecated:
 	DocsArchive(arg *RefPaperDoc) (err error)
+	DocsArchiveContext(ctx context.Context, arg *RefPaperDoc) (err error)
 	// DocsCreate : Creates a new Paper doc with the provided content. Note that
 	// this endpoint will continue to work for content created by users on the
 	// older version of Paper. To check which version of Paper a user is on, use
@@ -52,6 +55,7 @@ type Client interface {
 	// for more information.
 	// Deprecated:
 	DocsCreate(arg *PaperDocCreateArgs, content io.Reader) (res *PaperDocCreateUpdateResult, err error)
+	DocsCreateContext(ctx context.Context, arg *PaperDocCreateArgs, content io.Reader) (res *PaperDocCreateUpdateResult, err error)
 	// DocsDownload : Exports and downloads Paper doc either as HTML or
 	// markdown. Note that this endpoint will continue to work for content
 	// created by users on the older version of Paper. To check which version of
@@ -62,6 +66,7 @@ type Client interface {
 	// for migration information.
 	// Deprecated:
 	DocsDownload(arg *PaperDocExport) (res *PaperDocExportResult, content io.ReadCloser, err error)
+	DocsDownloadContext(ctx context.Context, arg *PaperDocExport) (res *PaperDocExportResult, content io.ReadCloser, err error)
 	// DocsFolderUsersList : Lists the users who are explicitly invited to the
 	// Paper folder in which the Paper doc is contained. For private folders all
 	// users (including owner) shared on the folder are listed and for team
@@ -75,6 +80,7 @@ type Client interface {
 	// for migration information.
 	// Deprecated:
 	DocsFolderUsersList(arg *ListUsersOnFolderArgs) (res *ListUsersOnFolderResponse, err error)
+	DocsFolderUsersListContext(ctx context.Context, arg *ListUsersOnFolderArgs) (res *ListUsersOnFolderResponse, err error)
 	// DocsFolderUsersListContinue : Once a cursor has been retrieved from
 	// `docsFolderUsersList`, use this to paginate through all users on the
 	// Paper folder. Note that this endpoint will continue to work for content
@@ -86,6 +92,7 @@ type Client interface {
 	// for migration information.
 	// Deprecated:
 	DocsFolderUsersListContinue(arg *ListUsersOnFolderContinueArgs) (res *ListUsersOnFolderResponse, err error)
+	DocsFolderUsersListContinueContext(ctx context.Context, arg *ListUsersOnFolderContinueArgs) (res *ListUsersOnFolderResponse, err error)
 	// DocsGetFolderInfo : Retrieves folder information for the given Paper doc.
 	// This includes:   - folder sharing policy; permissions for subfolders are
 	// set by the top-level folder.   - full 'filepath', i.e. the list of
@@ -101,6 +108,7 @@ type Client interface {
 	// for migration information.
 	// Deprecated:
 	DocsGetFolderInfo(arg *RefPaperDoc) (res *FoldersContainingPaperDoc, err error)
+	DocsGetFolderInfoContext(ctx context.Context, arg *RefPaperDoc) (res *FoldersContainingPaperDoc, err error)
 	// DocsList : Return the list of all Paper docs according to the argument
 	// specifications. To iterate over through the full pagination, pass the
 	// cursor to `docsListContinue`. Note that this endpoint will continue to
@@ -112,6 +120,7 @@ type Client interface {
 	// for migration information.
 	// Deprecated:
 	DocsList(arg *ListPaperDocsArgs) (res *ListPaperDocsResponse, err error)
+	DocsListContext(ctx context.Context, arg *ListPaperDocsArgs) (res *ListPaperDocsResponse, err error)
 	// DocsListContinue : Once a cursor has been retrieved from `docsList`, use
 	// this to paginate through all Paper doc. Note that this endpoint will
 	// continue to work for content created by users on the older version of
@@ -123,6 +132,7 @@ type Client interface {
 	// for migration information.
 	// Deprecated:
 	DocsListContinue(arg *ListPaperDocsContinueArgs) (res *ListPaperDocsResponse, err error)
+	DocsListContinueContext(ctx context.Context, arg *ListPaperDocsContinueArgs) (res *ListPaperDocsResponse, err error)
 	// DocsPermanentlyDelete : Permanently deletes the given Paper doc. This
 	// operation is final as the doc cannot be recovered. This action can be
 	// performed only by the doc owner. Note that this endpoint will continue to
@@ -134,6 +144,7 @@ type Client interface {
 	// for migration information.
 	// Deprecated:
 	DocsPermanentlyDelete(arg *RefPaperDoc) (err error)
+	DocsPermanentlyDeleteContext(ctx context.Context, arg *RefPaperDoc) (err error)
 	// DocsSharingPolicyGet : Gets the default sharing policy for the given
 	// Paper doc. Note that this endpoint will continue to work for content
 	// created by users on the older version of Paper. To check which version of
@@ -144,6 +155,7 @@ type Client interface {
 	// for migration information.
 	// Deprecated:
 	DocsSharingPolicyGet(arg *RefPaperDoc) (res *SharingPolicy, err error)
+	DocsSharingPolicyGetContext(ctx context.Context, arg *RefPaperDoc) (res *SharingPolicy, err error)
 	// DocsSharingPolicySet : Sets the default sharing policy for the given
 	// Paper doc. The default 'team_sharing_policy' can be changed only by
 	// teams, omit this field for personal accounts. The 'public_sharing_policy'
@@ -158,6 +170,7 @@ type Client interface {
 	// for migration information.
 	// Deprecated:
 	DocsSharingPolicySet(arg *PaperDocSharingPolicy) (err error)
+	DocsSharingPolicySetContext(ctx context.Context, arg *PaperDocSharingPolicy) (err error)
 	// DocsUpdate : Updates an existing Paper doc with the provided content.
 	// Note that this endpoint will continue to work for content created by
 	// users on the older version of Paper. To check which version of Paper a
@@ -169,6 +182,7 @@ type Client interface {
 	// for more information.
 	// Deprecated:
 	DocsUpdate(arg *PaperDocUpdateArgs, content io.Reader) (res *PaperDocCreateUpdateResult, err error)
+	DocsUpdateContext(ctx context.Context, arg *PaperDocUpdateArgs, content io.Reader) (res *PaperDocCreateUpdateResult, err error)
 	// DocsUsersAdd : Allows an owner or editor to add users to a Paper doc or
 	// change their permissions using their email address or Dropbox account ID.
 	// The doc owner's permissions cannot be changed. Note that this endpoint
@@ -181,6 +195,7 @@ type Client interface {
 	// for migration information.
 	// Deprecated:
 	DocsUsersAdd(arg *AddPaperDocUser) (res []*AddPaperDocUserMemberResult, err error)
+	DocsUsersAddContext(ctx context.Context, arg *AddPaperDocUser) (res []*AddPaperDocUserMemberResult, err error)
 	// DocsUsersList : Lists all users who visited the Paper doc or users with
 	// explicit access. This call excludes users who have been removed. The list
 	// is sorted by the date of the visit or the share date. The list will
@@ -194,6 +209,7 @@ type Client interface {
 	// for migration information.
 	// Deprecated:
 	DocsUsersList(arg *ListUsersOnPaperDocArgs) (res *ListUsersOnPaperDocResponse, err error)
+	DocsUsersListContext(ctx context.Context, arg *ListUsersOnPaperDocArgs) (res *ListUsersOnPaperDocResponse, err error)
 	// DocsUsersListContinue : Once a cursor has been retrieved from
 	// `docsUsersList`, use this to paginate through all users on the Paper doc.
 	// Note that this endpoint will continue to work for content created by
@@ -205,6 +221,7 @@ type Client interface {
 	// for migration information.
 	// Deprecated:
 	DocsUsersListContinue(arg *ListUsersOnPaperDocContinueArgs) (res *ListUsersOnPaperDocResponse, err error)
+	DocsUsersListContinueContext(ctx context.Context, arg *ListUsersOnPaperDocContinueArgs) (res *ListUsersOnPaperDocResponse, err error)
 	// DocsUsersRemove : Allows an owner or editor to remove users from a Paper
 	// doc using their email address or Dropbox account ID. The doc owner cannot
 	// be removed. Note that this endpoint will continue to work for content
@@ -216,6 +233,7 @@ type Client interface {
 	// for migration information.
 	// Deprecated:
 	DocsUsersRemove(arg *RemovePaperDocUser) (err error)
+	DocsUsersRemoveContext(ctx context.Context, arg *RemovePaperDocUser) (err error)
 	// FoldersCreate : Create a new Paper folder with the provided info. Note
 	// that this endpoint will continue to work for content created by users on
 	// the older version of Paper. To check which version of Paper a user is on,
@@ -226,17 +244,18 @@ type Client interface {
 	// for migration information.
 	// Deprecated:
 	FoldersCreate(arg *PaperFolderCreateArg) (res *PaperFolderCreateResult, err error)
+	FoldersCreateContext(ctx context.Context, arg *PaperFolderCreateArg) (res *PaperFolderCreateResult, err error)
 }
 
 type apiImpl dropbox.Context
 
-//DocsArchiveAPIError is an error-wrapper for the docs/archive route
+// DocsArchiveAPIError is an error-wrapper for the docs/archive route
 type DocsArchiveAPIError struct {
 	dropbox.APIError
 	EndpointError *DocLookupError `json:"error"`
 }
 
-func (dbx *apiImpl) DocsArchive(arg *RefPaperDoc) (err error) {
+func (dbx *apiImpl) DocsArchiveContext(ctx context.Context, arg *RefPaperDoc) (err error) {
 	log.Printf("WARNING: API `DocsArchive` is deprecated")
 
 	req := dropbox.Request{
@@ -251,11 +270,11 @@ func (dbx *apiImpl) DocsArchive(arg *RefPaperDoc) (err error) {
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr DocsArchiveAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -266,13 +285,17 @@ func (dbx *apiImpl) DocsArchive(arg *RefPaperDoc) (err error) {
 	return
 }
 
-//DocsCreateAPIError is an error-wrapper for the docs/create route
+func (dbx *apiImpl) DocsArchive(arg *RefPaperDoc) (err error) {
+	return dbx.DocsArchiveContext(context.Background(), arg)
+}
+
+// DocsCreateAPIError is an error-wrapper for the docs/create route
 type DocsCreateAPIError struct {
 	dropbox.APIError
 	EndpointError *PaperDocCreateError `json:"error"`
 }
 
-func (dbx *apiImpl) DocsCreate(arg *PaperDocCreateArgs, content io.Reader) (res *PaperDocCreateUpdateResult, err error) {
+func (dbx *apiImpl) DocsCreateContext(ctx context.Context, arg *PaperDocCreateArgs, content io.Reader) (res *PaperDocCreateUpdateResult, err error) {
 	log.Printf("WARNING: API `DocsCreate` is deprecated")
 
 	req := dropbox.Request{
@@ -287,11 +310,11 @@ func (dbx *apiImpl) DocsCreate(arg *PaperDocCreateArgs, content io.Reader) (res 
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, content)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, content)
 	if err != nil {
 		var appErr DocsCreateAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -306,13 +329,17 @@ func (dbx *apiImpl) DocsCreate(arg *PaperDocCreateArgs, content io.Reader) (res 
 	return
 }
 
-//DocsDownloadAPIError is an error-wrapper for the docs/download route
+func (dbx *apiImpl) DocsCreate(arg *PaperDocCreateArgs, content io.Reader) (res *PaperDocCreateUpdateResult, err error) {
+	return dbx.DocsCreateContext(context.Background(), arg, content)
+}
+
+// DocsDownloadAPIError is an error-wrapper for the docs/download route
 type DocsDownloadAPIError struct {
 	dropbox.APIError
 	EndpointError *DocLookupError `json:"error"`
 }
 
-func (dbx *apiImpl) DocsDownload(arg *PaperDocExport) (res *PaperDocExportResult, content io.ReadCloser, err error) {
+func (dbx *apiImpl) DocsDownloadContext(ctx context.Context, arg *PaperDocExport) (res *PaperDocExportResult, content io.ReadCloser, err error) {
 	log.Printf("WARNING: API `DocsDownload` is deprecated")
 
 	req := dropbox.Request{
@@ -327,11 +354,11 @@ func (dbx *apiImpl) DocsDownload(arg *PaperDocExport) (res *PaperDocExportResult
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr DocsDownloadAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -346,13 +373,17 @@ func (dbx *apiImpl) DocsDownload(arg *PaperDocExport) (res *PaperDocExportResult
 	return
 }
 
-//DocsFolderUsersListAPIError is an error-wrapper for the docs/folder_users/list route
+func (dbx *apiImpl) DocsDownload(arg *PaperDocExport) (res *PaperDocExportResult, content io.ReadCloser, err error) {
+	return dbx.DocsDownloadContext(context.Background(), arg)
+}
+
+// DocsFolderUsersListAPIError is an error-wrapper for the docs/folder_users/list route
 type DocsFolderUsersListAPIError struct {
 	dropbox.APIError
 	EndpointError *DocLookupError `json:"error"`
 }
 
-func (dbx *apiImpl) DocsFolderUsersList(arg *ListUsersOnFolderArgs) (res *ListUsersOnFolderResponse, err error) {
+func (dbx *apiImpl) DocsFolderUsersListContext(ctx context.Context, arg *ListUsersOnFolderArgs) (res *ListUsersOnFolderResponse, err error) {
 	log.Printf("WARNING: API `DocsFolderUsersList` is deprecated")
 
 	req := dropbox.Request{
@@ -367,11 +398,11 @@ func (dbx *apiImpl) DocsFolderUsersList(arg *ListUsersOnFolderArgs) (res *ListUs
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr DocsFolderUsersListAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -386,13 +417,17 @@ func (dbx *apiImpl) DocsFolderUsersList(arg *ListUsersOnFolderArgs) (res *ListUs
 	return
 }
 
-//DocsFolderUsersListContinueAPIError is an error-wrapper for the docs/folder_users/list/continue route
+func (dbx *apiImpl) DocsFolderUsersList(arg *ListUsersOnFolderArgs) (res *ListUsersOnFolderResponse, err error) {
+	return dbx.DocsFolderUsersListContext(context.Background(), arg)
+}
+
+// DocsFolderUsersListContinueAPIError is an error-wrapper for the docs/folder_users/list/continue route
 type DocsFolderUsersListContinueAPIError struct {
 	dropbox.APIError
 	EndpointError *ListUsersCursorError `json:"error"`
 }
 
-func (dbx *apiImpl) DocsFolderUsersListContinue(arg *ListUsersOnFolderContinueArgs) (res *ListUsersOnFolderResponse, err error) {
+func (dbx *apiImpl) DocsFolderUsersListContinueContext(ctx context.Context, arg *ListUsersOnFolderContinueArgs) (res *ListUsersOnFolderResponse, err error) {
 	log.Printf("WARNING: API `DocsFolderUsersListContinue` is deprecated")
 
 	req := dropbox.Request{
@@ -407,11 +442,11 @@ func (dbx *apiImpl) DocsFolderUsersListContinue(arg *ListUsersOnFolderContinueAr
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr DocsFolderUsersListContinueAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -426,13 +461,17 @@ func (dbx *apiImpl) DocsFolderUsersListContinue(arg *ListUsersOnFolderContinueAr
 	return
 }
 
-//DocsGetFolderInfoAPIError is an error-wrapper for the docs/get_folder_info route
+func (dbx *apiImpl) DocsFolderUsersListContinue(arg *ListUsersOnFolderContinueArgs) (res *ListUsersOnFolderResponse, err error) {
+	return dbx.DocsFolderUsersListContinueContext(context.Background(), arg)
+}
+
+// DocsGetFolderInfoAPIError is an error-wrapper for the docs/get_folder_info route
 type DocsGetFolderInfoAPIError struct {
 	dropbox.APIError
 	EndpointError *DocLookupError `json:"error"`
 }
 
-func (dbx *apiImpl) DocsGetFolderInfo(arg *RefPaperDoc) (res *FoldersContainingPaperDoc, err error) {
+func (dbx *apiImpl) DocsGetFolderInfoContext(ctx context.Context, arg *RefPaperDoc) (res *FoldersContainingPaperDoc, err error) {
 	log.Printf("WARNING: API `DocsGetFolderInfo` is deprecated")
 
 	req := dropbox.Request{
@@ -447,11 +486,11 @@ func (dbx *apiImpl) DocsGetFolderInfo(arg *RefPaperDoc) (res *FoldersContainingP
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr DocsGetFolderInfoAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -466,13 +505,17 @@ func (dbx *apiImpl) DocsGetFolderInfo(arg *RefPaperDoc) (res *FoldersContainingP
 	return
 }
 
-//DocsListAPIError is an error-wrapper for the docs/list route
+func (dbx *apiImpl) DocsGetFolderInfo(arg *RefPaperDoc) (res *FoldersContainingPaperDoc, err error) {
+	return dbx.DocsGetFolderInfoContext(context.Background(), arg)
+}
+
+// DocsListAPIError is an error-wrapper for the docs/list route
 type DocsListAPIError struct {
 	dropbox.APIError
 	EndpointError struct{} `json:"error"`
 }
 
-func (dbx *apiImpl) DocsList(arg *ListPaperDocsArgs) (res *ListPaperDocsResponse, err error) {
+func (dbx *apiImpl) DocsListContext(ctx context.Context, arg *ListPaperDocsArgs) (res *ListPaperDocsResponse, err error) {
 	log.Printf("WARNING: API `DocsList` is deprecated")
 
 	req := dropbox.Request{
@@ -487,11 +530,11 @@ func (dbx *apiImpl) DocsList(arg *ListPaperDocsArgs) (res *ListPaperDocsResponse
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr DocsListAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -506,13 +549,17 @@ func (dbx *apiImpl) DocsList(arg *ListPaperDocsArgs) (res *ListPaperDocsResponse
 	return
 }
 
-//DocsListContinueAPIError is an error-wrapper for the docs/list/continue route
+func (dbx *apiImpl) DocsList(arg *ListPaperDocsArgs) (res *ListPaperDocsResponse, err error) {
+	return dbx.DocsListContext(context.Background(), arg)
+}
+
+// DocsListContinueAPIError is an error-wrapper for the docs/list/continue route
 type DocsListContinueAPIError struct {
 	dropbox.APIError
 	EndpointError *ListDocsCursorError `json:"error"`
 }
 
-func (dbx *apiImpl) DocsListContinue(arg *ListPaperDocsContinueArgs) (res *ListPaperDocsResponse, err error) {
+func (dbx *apiImpl) DocsListContinueContext(ctx context.Context, arg *ListPaperDocsContinueArgs) (res *ListPaperDocsResponse, err error) {
 	log.Printf("WARNING: API `DocsListContinue` is deprecated")
 
 	req := dropbox.Request{
@@ -527,11 +574,11 @@ func (dbx *apiImpl) DocsListContinue(arg *ListPaperDocsContinueArgs) (res *ListP
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr DocsListContinueAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -546,13 +593,17 @@ func (dbx *apiImpl) DocsListContinue(arg *ListPaperDocsContinueArgs) (res *ListP
 	return
 }
 
-//DocsPermanentlyDeleteAPIError is an error-wrapper for the docs/permanently_delete route
+func (dbx *apiImpl) DocsListContinue(arg *ListPaperDocsContinueArgs) (res *ListPaperDocsResponse, err error) {
+	return dbx.DocsListContinueContext(context.Background(), arg)
+}
+
+// DocsPermanentlyDeleteAPIError is an error-wrapper for the docs/permanently_delete route
 type DocsPermanentlyDeleteAPIError struct {
 	dropbox.APIError
 	EndpointError *DocLookupError `json:"error"`
 }
 
-func (dbx *apiImpl) DocsPermanentlyDelete(arg *RefPaperDoc) (err error) {
+func (dbx *apiImpl) DocsPermanentlyDeleteContext(ctx context.Context, arg *RefPaperDoc) (err error) {
 	log.Printf("WARNING: API `DocsPermanentlyDelete` is deprecated")
 
 	req := dropbox.Request{
@@ -567,11 +618,11 @@ func (dbx *apiImpl) DocsPermanentlyDelete(arg *RefPaperDoc) (err error) {
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr DocsPermanentlyDeleteAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -582,13 +633,17 @@ func (dbx *apiImpl) DocsPermanentlyDelete(arg *RefPaperDoc) (err error) {
 	return
 }
 
-//DocsSharingPolicyGetAPIError is an error-wrapper for the docs/sharing_policy/get route
+func (dbx *apiImpl) DocsPermanentlyDelete(arg *RefPaperDoc) (err error) {
+	return dbx.DocsPermanentlyDeleteContext(context.Background(), arg)
+}
+
+// DocsSharingPolicyGetAPIError is an error-wrapper for the docs/sharing_policy/get route
 type DocsSharingPolicyGetAPIError struct {
 	dropbox.APIError
 	EndpointError *DocLookupError `json:"error"`
 }
 
-func (dbx *apiImpl) DocsSharingPolicyGet(arg *RefPaperDoc) (res *SharingPolicy, err error) {
+func (dbx *apiImpl) DocsSharingPolicyGetContext(ctx context.Context, arg *RefPaperDoc) (res *SharingPolicy, err error) {
 	log.Printf("WARNING: API `DocsSharingPolicyGet` is deprecated")
 
 	req := dropbox.Request{
@@ -603,11 +658,11 @@ func (dbx *apiImpl) DocsSharingPolicyGet(arg *RefPaperDoc) (res *SharingPolicy, 
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr DocsSharingPolicyGetAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -622,13 +677,17 @@ func (dbx *apiImpl) DocsSharingPolicyGet(arg *RefPaperDoc) (res *SharingPolicy, 
 	return
 }
 
-//DocsSharingPolicySetAPIError is an error-wrapper for the docs/sharing_policy/set route
+func (dbx *apiImpl) DocsSharingPolicyGet(arg *RefPaperDoc) (res *SharingPolicy, err error) {
+	return dbx.DocsSharingPolicyGetContext(context.Background(), arg)
+}
+
+// DocsSharingPolicySetAPIError is an error-wrapper for the docs/sharing_policy/set route
 type DocsSharingPolicySetAPIError struct {
 	dropbox.APIError
 	EndpointError *DocLookupError `json:"error"`
 }
 
-func (dbx *apiImpl) DocsSharingPolicySet(arg *PaperDocSharingPolicy) (err error) {
+func (dbx *apiImpl) DocsSharingPolicySetContext(ctx context.Context, arg *PaperDocSharingPolicy) (err error) {
 	log.Printf("WARNING: API `DocsSharingPolicySet` is deprecated")
 
 	req := dropbox.Request{
@@ -643,11 +702,11 @@ func (dbx *apiImpl) DocsSharingPolicySet(arg *PaperDocSharingPolicy) (err error)
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr DocsSharingPolicySetAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -658,13 +717,17 @@ func (dbx *apiImpl) DocsSharingPolicySet(arg *PaperDocSharingPolicy) (err error)
 	return
 }
 
-//DocsUpdateAPIError is an error-wrapper for the docs/update route
+func (dbx *apiImpl) DocsSharingPolicySet(arg *PaperDocSharingPolicy) (err error) {
+	return dbx.DocsSharingPolicySetContext(context.Background(), arg)
+}
+
+// DocsUpdateAPIError is an error-wrapper for the docs/update route
 type DocsUpdateAPIError struct {
 	dropbox.APIError
 	EndpointError *PaperDocUpdateError `json:"error"`
 }
 
-func (dbx *apiImpl) DocsUpdate(arg *PaperDocUpdateArgs, content io.Reader) (res *PaperDocCreateUpdateResult, err error) {
+func (dbx *apiImpl) DocsUpdateContext(ctx context.Context, arg *PaperDocUpdateArgs, content io.Reader) (res *PaperDocCreateUpdateResult, err error) {
 	log.Printf("WARNING: API `DocsUpdate` is deprecated")
 
 	req := dropbox.Request{
@@ -679,11 +742,11 @@ func (dbx *apiImpl) DocsUpdate(arg *PaperDocUpdateArgs, content io.Reader) (res 
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, content)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, content)
 	if err != nil {
 		var appErr DocsUpdateAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -698,13 +761,17 @@ func (dbx *apiImpl) DocsUpdate(arg *PaperDocUpdateArgs, content io.Reader) (res 
 	return
 }
 
-//DocsUsersAddAPIError is an error-wrapper for the docs/users/add route
+func (dbx *apiImpl) DocsUpdate(arg *PaperDocUpdateArgs, content io.Reader) (res *PaperDocCreateUpdateResult, err error) {
+	return dbx.DocsUpdateContext(context.Background(), arg, content)
+}
+
+// DocsUsersAddAPIError is an error-wrapper for the docs/users/add route
 type DocsUsersAddAPIError struct {
 	dropbox.APIError
 	EndpointError *DocLookupError `json:"error"`
 }
 
-func (dbx *apiImpl) DocsUsersAdd(arg *AddPaperDocUser) (res []*AddPaperDocUserMemberResult, err error) {
+func (dbx *apiImpl) DocsUsersAddContext(ctx context.Context, arg *AddPaperDocUser) (res []*AddPaperDocUserMemberResult, err error) {
 	log.Printf("WARNING: API `DocsUsersAdd` is deprecated")
 
 	req := dropbox.Request{
@@ -719,11 +786,11 @@ func (dbx *apiImpl) DocsUsersAdd(arg *AddPaperDocUser) (res []*AddPaperDocUserMe
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr DocsUsersAddAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -738,13 +805,17 @@ func (dbx *apiImpl) DocsUsersAdd(arg *AddPaperDocUser) (res []*AddPaperDocUserMe
 	return
 }
 
-//DocsUsersListAPIError is an error-wrapper for the docs/users/list route
+func (dbx *apiImpl) DocsUsersAdd(arg *AddPaperDocUser) (res []*AddPaperDocUserMemberResult, err error) {
+	return dbx.DocsUsersAddContext(context.Background(), arg)
+}
+
+// DocsUsersListAPIError is an error-wrapper for the docs/users/list route
 type DocsUsersListAPIError struct {
 	dropbox.APIError
 	EndpointError *DocLookupError `json:"error"`
 }
 
-func (dbx *apiImpl) DocsUsersList(arg *ListUsersOnPaperDocArgs) (res *ListUsersOnPaperDocResponse, err error) {
+func (dbx *apiImpl) DocsUsersListContext(ctx context.Context, arg *ListUsersOnPaperDocArgs) (res *ListUsersOnPaperDocResponse, err error) {
 	log.Printf("WARNING: API `DocsUsersList` is deprecated")
 
 	req := dropbox.Request{
@@ -759,11 +830,11 @@ func (dbx *apiImpl) DocsUsersList(arg *ListUsersOnPaperDocArgs) (res *ListUsersO
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr DocsUsersListAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -778,13 +849,17 @@ func (dbx *apiImpl) DocsUsersList(arg *ListUsersOnPaperDocArgs) (res *ListUsersO
 	return
 }
 
-//DocsUsersListContinueAPIError is an error-wrapper for the docs/users/list/continue route
+func (dbx *apiImpl) DocsUsersList(arg *ListUsersOnPaperDocArgs) (res *ListUsersOnPaperDocResponse, err error) {
+	return dbx.DocsUsersListContext(context.Background(), arg)
+}
+
+// DocsUsersListContinueAPIError is an error-wrapper for the docs/users/list/continue route
 type DocsUsersListContinueAPIError struct {
 	dropbox.APIError
 	EndpointError *ListUsersCursorError `json:"error"`
 }
 
-func (dbx *apiImpl) DocsUsersListContinue(arg *ListUsersOnPaperDocContinueArgs) (res *ListUsersOnPaperDocResponse, err error) {
+func (dbx *apiImpl) DocsUsersListContinueContext(ctx context.Context, arg *ListUsersOnPaperDocContinueArgs) (res *ListUsersOnPaperDocResponse, err error) {
 	log.Printf("WARNING: API `DocsUsersListContinue` is deprecated")
 
 	req := dropbox.Request{
@@ -799,11 +874,11 @@ func (dbx *apiImpl) DocsUsersListContinue(arg *ListUsersOnPaperDocContinueArgs) 
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr DocsUsersListContinueAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -818,13 +893,17 @@ func (dbx *apiImpl) DocsUsersListContinue(arg *ListUsersOnPaperDocContinueArgs) 
 	return
 }
 
-//DocsUsersRemoveAPIError is an error-wrapper for the docs/users/remove route
+func (dbx *apiImpl) DocsUsersListContinue(arg *ListUsersOnPaperDocContinueArgs) (res *ListUsersOnPaperDocResponse, err error) {
+	return dbx.DocsUsersListContinueContext(context.Background(), arg)
+}
+
+// DocsUsersRemoveAPIError is an error-wrapper for the docs/users/remove route
 type DocsUsersRemoveAPIError struct {
 	dropbox.APIError
 	EndpointError *DocLookupError `json:"error"`
 }
 
-func (dbx *apiImpl) DocsUsersRemove(arg *RemovePaperDocUser) (err error) {
+func (dbx *apiImpl) DocsUsersRemoveContext(ctx context.Context, arg *RemovePaperDocUser) (err error) {
 	log.Printf("WARNING: API `DocsUsersRemove` is deprecated")
 
 	req := dropbox.Request{
@@ -839,11 +918,11 @@ func (dbx *apiImpl) DocsUsersRemove(arg *RemovePaperDocUser) (err error) {
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr DocsUsersRemoveAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -854,13 +933,17 @@ func (dbx *apiImpl) DocsUsersRemove(arg *RemovePaperDocUser) (err error) {
 	return
 }
 
-//FoldersCreateAPIError is an error-wrapper for the folders/create route
+func (dbx *apiImpl) DocsUsersRemove(arg *RemovePaperDocUser) (err error) {
+	return dbx.DocsUsersRemoveContext(context.Background(), arg)
+}
+
+// FoldersCreateAPIError is an error-wrapper for the folders/create route
 type FoldersCreateAPIError struct {
 	dropbox.APIError
 	EndpointError *PaperFolderCreateError `json:"error"`
 }
 
-func (dbx *apiImpl) FoldersCreate(arg *PaperFolderCreateArg) (res *PaperFolderCreateResult, err error) {
+func (dbx *apiImpl) FoldersCreateContext(ctx context.Context, arg *PaperFolderCreateArg) (res *PaperFolderCreateResult, err error) {
 	log.Printf("WARNING: API `FoldersCreate` is deprecated")
 
 	req := dropbox.Request{
@@ -875,11 +958,11 @@ func (dbx *apiImpl) FoldersCreate(arg *PaperFolderCreateArg) (res *PaperFolderCr
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr FoldersCreateAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -892,6 +975,10 @@ func (dbx *apiImpl) FoldersCreate(arg *PaperFolderCreateArg) (res *PaperFolderCr
 
 	_ = respBody
 	return
+}
+
+func (dbx *apiImpl) FoldersCreate(arg *PaperFolderCreateArg) (res *PaperFolderCreateResult, err error) {
+	return dbx.FoldersCreateContext(context.Background(), arg)
 }
 
 // New returns a Client implementation for this namespace

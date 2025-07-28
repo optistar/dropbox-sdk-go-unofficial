@@ -21,7 +21,9 @@
 package account
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"io"
 
 	"github.com/dropbox/dropbox-sdk-go-unofficial/v6/dropbox"
@@ -32,17 +34,18 @@ import (
 type Client interface {
 	// SetProfilePhoto : Sets a user's profile photo.
 	SetProfilePhoto(arg *SetProfilePhotoArg) (res *SetProfilePhotoResult, err error)
+	SetProfilePhotoContext(ctx context.Context, arg *SetProfilePhotoArg) (res *SetProfilePhotoResult, err error)
 }
 
 type apiImpl dropbox.Context
 
-//SetProfilePhotoAPIError is an error-wrapper for the set_profile_photo route
+// SetProfilePhotoAPIError is an error-wrapper for the set_profile_photo route
 type SetProfilePhotoAPIError struct {
 	dropbox.APIError
 	EndpointError *SetProfilePhotoError `json:"error"`
 }
 
-func (dbx *apiImpl) SetProfilePhoto(arg *SetProfilePhotoArg) (res *SetProfilePhotoResult, err error) {
+func (dbx *apiImpl) SetProfilePhotoContext(ctx context.Context, arg *SetProfilePhotoArg) (res *SetProfilePhotoResult, err error) {
 	req := dropbox.Request{
 		Host:         "api",
 		Namespace:    "account",
@@ -55,11 +58,11 @@ func (dbx *apiImpl) SetProfilePhoto(arg *SetProfilePhotoArg) (res *SetProfilePho
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr SetProfilePhotoAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -72,6 +75,10 @@ func (dbx *apiImpl) SetProfilePhoto(arg *SetProfilePhotoArg) (res *SetProfilePho
 
 	_ = respBody
 	return
+}
+
+func (dbx *apiImpl) SetProfilePhoto(arg *SetProfilePhotoArg) (res *SetProfilePhotoResult, err error) {
+	return dbx.SetProfilePhotoContext(context.Background(), arg)
 }
 
 // New returns a Client implementation for this namespace

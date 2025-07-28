@@ -21,7 +21,9 @@
 package files
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"log"
 
@@ -38,19 +40,30 @@ type Client interface {
 	// root folder is unsupported.
 	// Deprecated: Use `GetMetadata` instead
 	AlphaGetMetadata(arg *AlphaGetMetadataArg) (res IsMetadata, err error)
+	AlphaGetMetadataContext(ctx context.Context, arg *AlphaGetMetadataArg) (res IsMetadata, err error)
 	// AlphaUpload : Create a new file with the contents provided in the
 	// request. Note that the behavior of this alpha endpoint is unstable and
 	// subject to change. Do not use this to upload a file larger than 150 MB.
 	// Instead, create an upload session with `uploadSessionStart`.
 	// Deprecated: Use `Upload` instead
 	AlphaUpload(arg *UploadArg, content io.Reader) (res *FileMetadata, err error)
-	// Copy : Copy a file or folder to a different location in the user's
-	// Dropbox. If the source path is a folder all its contents will be copied.
-	CopyV2(arg *RelocationArg) (res *RelocationResult, err error)
+	AlphaUploadContext(ctx context.Context, arg *UploadArg, content io.Reader) (res *FileMetadata, err error)
 	// Copy : Copy a file or folder to a different location in the user's
 	// Dropbox. If the source path is a folder all its contents will be copied.
 	// Deprecated: Use `CopyV2` instead
 	Copy(arg *RelocationArg) (res IsMetadata, err error)
+	CopyContext(ctx context.Context, arg *RelocationArg) (res IsMetadata, err error)
+	// Copy : Copy a file or folder to a different location in the user's
+	// Dropbox. If the source path is a folder all its contents will be copied.
+	CopyV2(arg *RelocationArg) (res *RelocationResult, err error)
+	CopyV2Context(ctx context.Context, arg *RelocationArg) (res *RelocationResult, err error)
+	// CopyBatch : Copy multiple files or folders to different locations at once
+	// in the user's Dropbox. This route will return job ID immediately and do
+	// the async copy job in background. Please use `copyBatchCheck` to check
+	// the job status.
+	// Deprecated: Use `CopyBatchV2` instead
+	CopyBatch(arg *RelocationBatchArg) (res *RelocationBatchLaunch, err error)
+	CopyBatchContext(ctx context.Context, arg *RelocationBatchArg) (res *RelocationBatchLaunch, err error)
 	// CopyBatch : Copy multiple files or folders to different locations at once
 	// in the user's Dropbox. This route will replace `copyBatch`. The main
 	// difference is this route will return status for each entry, while
@@ -58,31 +71,32 @@ type Client interface {
 	// finish synchronously, or return a job ID and do the async copy job in
 	// background. Please use `copyBatchCheck` to check the job status.
 	CopyBatchV2(arg *RelocationBatchArgBase) (res *RelocationBatchV2Launch, err error)
-	// CopyBatch : Copy multiple files or folders to different locations at once
-	// in the user's Dropbox. This route will return job ID immediately and do
-	// the async copy job in background. Please use `copyBatchCheck` to check
-	// the job status.
-	// Deprecated: Use `CopyBatchV2` instead
-	CopyBatch(arg *RelocationBatchArg) (res *RelocationBatchLaunch, err error)
-	// CopyBatchCheck : Returns the status of an asynchronous job for
-	// `copyBatch`. It returns list of results for each entry.
-	CopyBatchCheckV2(arg *async.PollArg) (res *RelocationBatchV2JobStatus, err error)
+	CopyBatchV2Context(ctx context.Context, arg *RelocationBatchArgBase) (res *RelocationBatchV2Launch, err error)
 	// CopyBatchCheck : Returns the status of an asynchronous job for
 	// `copyBatch`. If success, it returns list of results for each entry.
 	// Deprecated: Use `CopyBatchCheckV2` instead
 	CopyBatchCheck(arg *async.PollArg) (res *RelocationBatchJobStatus, err error)
+	CopyBatchCheckContext(ctx context.Context, arg *async.PollArg) (res *RelocationBatchJobStatus, err error)
+	// CopyBatchCheck : Returns the status of an asynchronous job for
+	// `copyBatch`. It returns list of results for each entry.
+	CopyBatchCheckV2(arg *async.PollArg) (res *RelocationBatchV2JobStatus, err error)
+	CopyBatchCheckV2Context(ctx context.Context, arg *async.PollArg) (res *RelocationBatchV2JobStatus, err error)
 	// CopyReferenceGet : Get a copy reference to a file or folder. This
 	// reference string can be used to save that file or folder to another
 	// user's Dropbox by passing it to `copyReferenceSave`.
 	CopyReferenceGet(arg *GetCopyReferenceArg) (res *GetCopyReferenceResult, err error)
+	CopyReferenceGetContext(ctx context.Context, arg *GetCopyReferenceArg) (res *GetCopyReferenceResult, err error)
 	// CopyReferenceSave : Save a copy reference returned by `copyReferenceGet`
 	// to the user's Dropbox.
 	CopyReferenceSave(arg *SaveCopyReferenceArg) (res *SaveCopyReferenceResult, err error)
-	// CreateFolder : Create a folder at a given path.
-	CreateFolderV2(arg *CreateFolderArg) (res *CreateFolderResult, err error)
+	CopyReferenceSaveContext(ctx context.Context, arg *SaveCopyReferenceArg) (res *SaveCopyReferenceResult, err error)
 	// CreateFolder : Create a folder at a given path.
 	// Deprecated: Use `CreateFolderV2` instead
 	CreateFolder(arg *CreateFolderArg) (res *FolderMetadata, err error)
+	CreateFolderContext(ctx context.Context, arg *CreateFolderArg) (res *FolderMetadata, err error)
+	// CreateFolder : Create a folder at a given path.
+	CreateFolderV2(arg *CreateFolderArg) (res *CreateFolderResult, err error)
+	CreateFolderV2Context(ctx context.Context, arg *CreateFolderArg) (res *CreateFolderResult, err error)
 	// CreateFolderBatch : Create multiple folders at once. This route is
 	// asynchronous for large batches, which returns a job ID immediately and
 	// runs the create folder batch asynchronously. Otherwise, creates the
@@ -91,16 +105,12 @@ type Client interface {
 	// `CreateFolderBatchArg.force_async` flag.  Use `createFolderBatchCheck` to
 	// check the job status.
 	CreateFolderBatch(arg *CreateFolderBatchArg) (res *CreateFolderBatchLaunch, err error)
+	CreateFolderBatchContext(ctx context.Context, arg *CreateFolderBatchArg) (res *CreateFolderBatchLaunch, err error)
 	// CreateFolderBatchCheck : Returns the status of an asynchronous job for
 	// `createFolderBatch`. If success, it returns list of result for each
 	// entry.
 	CreateFolderBatchCheck(arg *async.PollArg) (res *CreateFolderBatchJobStatus, err error)
-	// Delete : Delete the file or folder at a given path. If the path is a
-	// folder, all its contents will be deleted too. A successful response
-	// indicates that the file or folder was deleted. The returned metadata will
-	// be the corresponding `FileMetadata` or `FolderMetadata` for the item at
-	// time of deletion, and not a `DeletedMetadata` object.
-	DeleteV2(arg *DeleteArg) (res *DeleteResult, err error)
+	CreateFolderBatchCheckContext(ctx context.Context, arg *async.PollArg) (res *CreateFolderBatchJobStatus, err error)
 	// Delete : Delete the file or folder at a given path. If the path is a
 	// folder, all its contents will be deleted too. A successful response
 	// indicates that the file or folder was deleted. The returned metadata will
@@ -108,15 +118,26 @@ type Client interface {
 	// time of deletion, and not a `DeletedMetadata` object.
 	// Deprecated: Use `DeleteV2` instead
 	Delete(arg *DeleteArg) (res IsMetadata, err error)
+	DeleteContext(ctx context.Context, arg *DeleteArg) (res IsMetadata, err error)
+	// Delete : Delete the file or folder at a given path. If the path is a
+	// folder, all its contents will be deleted too. A successful response
+	// indicates that the file or folder was deleted. The returned metadata will
+	// be the corresponding `FileMetadata` or `FolderMetadata` for the item at
+	// time of deletion, and not a `DeletedMetadata` object.
+	DeleteV2(arg *DeleteArg) (res *DeleteResult, err error)
+	DeleteV2Context(ctx context.Context, arg *DeleteArg) (res *DeleteResult, err error)
 	// DeleteBatch : Delete multiple files/folders at once. This route is
 	// asynchronous, which returns a job ID immediately and runs the delete
 	// batch asynchronously. Use `deleteBatchCheck` to check the job status.
 	DeleteBatch(arg *DeleteBatchArg) (res *DeleteBatchLaunch, err error)
+	DeleteBatchContext(ctx context.Context, arg *DeleteBatchArg) (res *DeleteBatchLaunch, err error)
 	// DeleteBatchCheck : Returns the status of an asynchronous job for
 	// `deleteBatch`. If success, it returns list of result for each entry.
 	DeleteBatchCheck(arg *async.PollArg) (res *DeleteBatchJobStatus, err error)
+	DeleteBatchCheckContext(ctx context.Context, arg *async.PollArg) (res *DeleteBatchJobStatus, err error)
 	// Download : Download a file from a user's Dropbox.
 	Download(arg *DownloadArg) (res *FileMetadata, content io.ReadCloser, err error)
+	DownloadContext(ctx context.Context, arg *DownloadArg) (res *FileMetadata, content io.ReadCloser, err error)
 	// DownloadZip : Download a folder from the user's Dropbox, as a zip file.
 	// The folder must be less than 20 GB in size and any single file within
 	// must be less than 4 GB in size. The resulting zip must have fewer than
@@ -124,15 +145,19 @@ type Client interface {
 	// input cannot be a single file. Note: this endpoint does not support HTTP
 	// range requests.
 	DownloadZip(arg *DownloadZipArg) (res *DownloadZipResult, content io.ReadCloser, err error)
+	DownloadZipContext(ctx context.Context, arg *DownloadZipArg) (res *DownloadZipResult, content io.ReadCloser, err error)
 	// Export : Export a file from a user's Dropbox. This route only supports
 	// exporting files that cannot be downloaded directly  and whose
 	// `ExportResult.file_metadata` has `ExportInfo.export_as` populated.
 	Export(arg *ExportArg) (res *ExportResult, content io.ReadCloser, err error)
+	ExportContext(ctx context.Context, arg *ExportArg) (res *ExportResult, content io.ReadCloser, err error)
 	// GetFileLockBatch : Return the lock metadata for the given list of paths.
 	GetFileLockBatch(arg *LockFileBatchArg) (res *LockFileBatchResult, err error)
+	GetFileLockBatchContext(ctx context.Context, arg *LockFileBatchArg) (res *LockFileBatchResult, err error)
 	// GetMetadata : Returns the metadata for a file or folder. Note: Metadata
 	// for the root folder is unsupported.
 	GetMetadata(arg *GetMetadataArg) (res IsMetadata, err error)
+	GetMetadataContext(ctx context.Context, arg *GetMetadataArg) (res IsMetadata, err error)
 	// GetPreview : Get a preview for a file. Currently, PDF previews are
 	// generated for files with the following extensions: .ai, .doc, .docm,
 	// .docx, .eps, .gdoc, .gslides, .odp, .odt, .pps, .ppsm, .ppsx, .ppt,
@@ -140,12 +165,14 @@ type Client interface {
 	// following extensions: .csv, .ods, .xls, .xlsm, .gsheet, .xlsx. Other
 	// formats will return an unsupported extension error.
 	GetPreview(arg *PreviewArg) (res *FileMetadata, content io.ReadCloser, err error)
+	GetPreviewContext(ctx context.Context, arg *PreviewArg) (res *FileMetadata, content io.ReadCloser, err error)
 	// GetTemporaryLink : Get a temporary link to stream content of a file. This
 	// link will expire in four hours and afterwards you will get 410 Gone. This
 	// URL should not be used to display content directly in the browser. The
 	// Content-Type of the link is determined automatically by the file's mime
 	// type.
 	GetTemporaryLink(arg *GetTemporaryLinkArg) (res *GetTemporaryLinkResult, err error)
+	GetTemporaryLinkContext(ctx context.Context, arg *GetTemporaryLinkArg) (res *GetTemporaryLinkResult, err error)
 	// GetTemporaryUploadLink : Get a one-time use temporary upload link to
 	// upload a file to a Dropbox location.  This endpoint acts as a delayed
 	// `upload`. The returned temporary upload link may be used to make a POST
@@ -176,22 +203,26 @@ type Client interface {
 	// temporary upload link consumption response: Temporary upload link has
 	// been recently consumed.
 	GetTemporaryUploadLink(arg *GetTemporaryUploadLinkArg) (res *GetTemporaryUploadLinkResult, err error)
+	GetTemporaryUploadLinkContext(ctx context.Context, arg *GetTemporaryUploadLinkArg) (res *GetTemporaryUploadLinkResult, err error)
 	// GetThumbnail : Get a thumbnail for an image. This method currently
 	// supports files with the following file extensions: jpg, jpeg, png, tiff,
 	// tif, gif, webp, ppm and bmp. Photos that are larger than 20MB in size
 	// won't be converted to a thumbnail.
 	GetThumbnail(arg *ThumbnailArg) (res *FileMetadata, content io.ReadCloser, err error)
+	GetThumbnailContext(ctx context.Context, arg *ThumbnailArg) (res *FileMetadata, content io.ReadCloser, err error)
 	// GetThumbnail : Get a thumbnail for an image. This method currently
 	// supports files with the following file extensions: jpg, jpeg, png, tiff,
 	// tif, gif, webp, ppm and bmp. Photos that are larger than 20MB in size
 	// won't be converted to a thumbnail.
 	GetThumbnailV2(arg *ThumbnailV2Arg) (res *PreviewResult, content io.ReadCloser, err error)
+	GetThumbnailV2Context(ctx context.Context, arg *ThumbnailV2Arg) (res *PreviewResult, content io.ReadCloser, err error)
 	// GetThumbnailBatch : Get thumbnails for a list of images. We allow up to
 	// 25 thumbnails in a single batch. This method currently supports files
 	// with the following file extensions: jpg, jpeg, png, tiff, tif, gif, webp,
 	// ppm and bmp. Photos that are larger than 20MB in size won't be converted
 	// to a thumbnail.
 	GetThumbnailBatch(arg *GetThumbnailBatchArg) (res *GetThumbnailBatchResult, err error)
+	GetThumbnailBatchContext(ctx context.Context, arg *GetThumbnailBatchArg) (res *GetThumbnailBatchResult, err error)
 	// ListFolder : Starts returning the contents of a folder. If the result's
 	// `ListFolderResult.has_more` field is true, call `listFolderContinue` with
 	// the returned `ListFolderResult.cursor` to retrieve more entries. If
@@ -214,16 +245,19 @@ type Client interface {
 	// by same API app for same user. If your app implements retry logic, please
 	// hold off the retry until the previous request finishes.
 	ListFolder(arg *ListFolderArg) (res *ListFolderResult, err error)
+	ListFolderContext(ctx context.Context, arg *ListFolderArg) (res *ListFolderResult, err error)
 	// ListFolderContinue : Once a cursor has been retrieved from `listFolder`,
 	// use this to paginate through all files and retrieve updates to the
 	// folder, following the same rules as documented for `listFolder`.
 	ListFolderContinue(arg *ListFolderContinueArg) (res *ListFolderResult, err error)
+	ListFolderContinueContext(ctx context.Context, arg *ListFolderContinueArg) (res *ListFolderResult, err error)
 	// ListFolderGetLatestCursor : A way to quickly get a cursor for the
 	// folder's state. Unlike `listFolder`, `listFolderGetLatestCursor` doesn't
 	// return any entries. This endpoint is for app which only needs to know
 	// about new files and modifications and doesn't need to know about files
 	// that already exist in Dropbox.
 	ListFolderGetLatestCursor(arg *ListFolderArg) (res *ListFolderGetLatestCursorResult, err error)
+	ListFolderGetLatestCursorContext(ctx context.Context, arg *ListFolderArg) (res *ListFolderGetLatestCursorResult, err error)
 	// ListFolderLongpoll : A longpoll endpoint to wait for changes on an
 	// account. In conjunction with `listFolderContinue`, this call gives you a
 	// low-latency way to monitor an account for file changes. The connection
@@ -232,6 +266,7 @@ type Client interface {
 	// server-side notifications, check out our `webhooks documentation`
 	// <https://www.dropbox.com/developers/reference/webhooks>.
 	ListFolderLongpoll(arg *ListFolderLongpollArg) (res *ListFolderLongpollResult, err error)
+	ListFolderLongpollContext(ctx context.Context, arg *ListFolderLongpollArg) (res *ListFolderLongpollResult, err error)
 	// ListRevisions : Returns revisions for files based on a file path or a
 	// file id. The file path or file id is identified from the latest file
 	// entry at the given file path or id. This end point allows your app to
@@ -242,19 +277,30 @@ type Client interface {
 	// `ListRevisionsMode.id`. The `ListRevisionsMode.id` mode is useful to
 	// retrieve revisions for a given file across moves or renames.
 	ListRevisions(arg *ListRevisionsArg) (res *ListRevisionsResult, err error)
+	ListRevisionsContext(ctx context.Context, arg *ListRevisionsArg) (res *ListRevisionsResult, err error)
 	// LockFileBatch : Lock the files at the given paths. A locked file will be
 	// writable only by the lock holder. A successful response indicates that
 	// the file has been locked. Returns a list of the locked file paths and
 	// their metadata after this operation.
 	LockFileBatch(arg *LockFileBatchArg) (res *LockFileBatchResult, err error)
-	// Move : Move a file or folder to a different location in the user's
-	// Dropbox. If the source path is a folder all its contents will be moved.
-	// Note that we do not currently support case-only renaming.
-	MoveV2(arg *RelocationArg) (res *RelocationResult, err error)
+	LockFileBatchContext(ctx context.Context, arg *LockFileBatchArg) (res *LockFileBatchResult, err error)
 	// Move : Move a file or folder to a different location in the user's
 	// Dropbox. If the source path is a folder all its contents will be moved.
 	// Deprecated: Use `MoveV2` instead
 	Move(arg *RelocationArg) (res IsMetadata, err error)
+	MoveContext(ctx context.Context, arg *RelocationArg) (res IsMetadata, err error)
+	// Move : Move a file or folder to a different location in the user's
+	// Dropbox. If the source path is a folder all its contents will be moved.
+	// Note that we do not currently support case-only renaming.
+	MoveV2(arg *RelocationArg) (res *RelocationResult, err error)
+	MoveV2Context(ctx context.Context, arg *RelocationArg) (res *RelocationResult, err error)
+	// MoveBatch : Move multiple files or folders to different locations at once
+	// in the user's Dropbox. This route will return job ID immediately and do
+	// the async moving job in background. Please use `moveBatchCheck` to check
+	// the job status.
+	// Deprecated: Use `MoveBatchV2` instead
+	MoveBatch(arg *RelocationBatchArg) (res *RelocationBatchLaunch, err error)
+	MoveBatchContext(ctx context.Context, arg *RelocationBatchArg) (res *RelocationBatchLaunch, err error)
 	// MoveBatch : Move multiple files or folders to different locations at once
 	// in the user's Dropbox. Note that we do not currently support case-only
 	// renaming. This route will replace `moveBatch`. The main difference is
@@ -263,68 +309,79 @@ type Client interface {
 	// or return a job ID and do the async move job in background. Please use
 	// `moveBatchCheck` to check the job status.
 	MoveBatchV2(arg *MoveBatchArg) (res *RelocationBatchV2Launch, err error)
-	// MoveBatch : Move multiple files or folders to different locations at once
-	// in the user's Dropbox. This route will return job ID immediately and do
-	// the async moving job in background. Please use `moveBatchCheck` to check
-	// the job status.
-	// Deprecated: Use `MoveBatchV2` instead
-	MoveBatch(arg *RelocationBatchArg) (res *RelocationBatchLaunch, err error)
-	// MoveBatchCheck : Returns the status of an asynchronous job for
-	// `moveBatch`. It returns list of results for each entry.
-	MoveBatchCheckV2(arg *async.PollArg) (res *RelocationBatchV2JobStatus, err error)
+	MoveBatchV2Context(ctx context.Context, arg *MoveBatchArg) (res *RelocationBatchV2Launch, err error)
 	// MoveBatchCheck : Returns the status of an asynchronous job for
 	// `moveBatch`. If success, it returns list of results for each entry.
 	// Deprecated: Use `MoveBatchCheckV2` instead
 	MoveBatchCheck(arg *async.PollArg) (res *RelocationBatchJobStatus, err error)
+	MoveBatchCheckContext(ctx context.Context, arg *async.PollArg) (res *RelocationBatchJobStatus, err error)
+	// MoveBatchCheck : Returns the status of an asynchronous job for
+	// `moveBatch`. It returns list of results for each entry.
+	MoveBatchCheckV2(arg *async.PollArg) (res *RelocationBatchV2JobStatus, err error)
+	MoveBatchCheckV2Context(ctx context.Context, arg *async.PollArg) (res *RelocationBatchV2JobStatus, err error)
 	// PaperCreate : Creates a new Paper doc with the provided content.
 	PaperCreate(arg *PaperCreateArg, content io.Reader) (res *PaperCreateResult, err error)
+	PaperCreateContext(ctx context.Context, arg *PaperCreateArg, content io.Reader) (res *PaperCreateResult, err error)
 	// PaperUpdate : Updates an existing Paper doc with the provided content.
 	PaperUpdate(arg *PaperUpdateArg, content io.Reader) (res *PaperUpdateResult, err error)
+	PaperUpdateContext(ctx context.Context, arg *PaperUpdateArg, content io.Reader) (res *PaperUpdateResult, err error)
 	// PermanentlyDelete : Permanently delete the file or folder at a given path
 	// (see https://www.dropbox.com/en/help/40). If the given file or folder is
 	// not yet deleted, this route will first delete it. It is possible for this
 	// route to successfully delete, then fail to permanently delete. Note: This
 	// endpoint is only available for Dropbox Business apps.
 	PermanentlyDelete(arg *DeleteArg) (err error)
+	PermanentlyDeleteContext(ctx context.Context, arg *DeleteArg) (err error)
 	// PropertiesAdd : has no documentation (yet)
 	// Deprecated:
 	PropertiesAdd(arg *file_properties.AddPropertiesArg) (err error)
+	PropertiesAddContext(ctx context.Context, arg *file_properties.AddPropertiesArg) (err error)
 	// PropertiesOverwrite : has no documentation (yet)
 	// Deprecated:
 	PropertiesOverwrite(arg *file_properties.OverwritePropertyGroupArg) (err error)
+	PropertiesOverwriteContext(ctx context.Context, arg *file_properties.OverwritePropertyGroupArg) (err error)
 	// PropertiesRemove : has no documentation (yet)
 	// Deprecated:
 	PropertiesRemove(arg *file_properties.RemovePropertiesArg) (err error)
+	PropertiesRemoveContext(ctx context.Context, arg *file_properties.RemovePropertiesArg) (err error)
 	// PropertiesTemplateGet : has no documentation (yet)
 	// Deprecated:
 	PropertiesTemplateGet(arg *file_properties.GetTemplateArg) (res *file_properties.GetTemplateResult, err error)
+	PropertiesTemplateGetContext(ctx context.Context, arg *file_properties.GetTemplateArg) (res *file_properties.GetTemplateResult, err error)
 	// PropertiesTemplateList : has no documentation (yet)
 	// Deprecated:
 	PropertiesTemplateList() (res *file_properties.ListTemplateResult, err error)
+	PropertiesTemplateListContext(ctx context.Context) (res *file_properties.ListTemplateResult, err error)
 	// PropertiesUpdate : has no documentation (yet)
 	// Deprecated:
 	PropertiesUpdate(arg *file_properties.UpdatePropertiesArg) (err error)
+	PropertiesUpdateContext(ctx context.Context, arg *file_properties.UpdatePropertiesArg) (err error)
 	// Restore : Restore a specific revision of a file to the given path.
 	Restore(arg *RestoreArg) (res *FileMetadata, err error)
+	RestoreContext(ctx context.Context, arg *RestoreArg) (res *FileMetadata, err error)
 	// SaveUrl : Save the data from a specified URL into a file in user's
 	// Dropbox. Note that the transfer from the URL must complete within 5
 	// minutes, or the operation will time out and the job will fail. If the
 	// given path already exists, the file will be renamed to avoid the conflict
 	// (e.g. myfile (1).txt).
 	SaveUrl(arg *SaveUrlArg) (res *SaveUrlResult, err error)
+	SaveUrlContext(ctx context.Context, arg *SaveUrlArg) (res *SaveUrlResult, err error)
 	// SaveUrlCheckJobStatus : Check the status of a `saveUrl` job.
 	SaveUrlCheckJobStatus(arg *async.PollArg) (res *SaveUrlJobStatus, err error)
+	SaveUrlCheckJobStatusContext(ctx context.Context, arg *async.PollArg) (res *SaveUrlJobStatus, err error)
 	// Search : Searches for files and folders. Note: Recent changes will be
 	// reflected in search results within a few seconds and older revisions of
 	// existing files may still match your query for up to a few days.
 	// Deprecated: Use `SearchV2` instead
 	Search(arg *SearchArg) (res *SearchResult, err error)
+	SearchContext(ctx context.Context, arg *SearchArg) (res *SearchResult, err error)
 	// Search : Searches for files and folders. Note: `search` along with
 	// `searchContinue` can only be used to retrieve a maximum of 10,000
 	// matches. Recent changes may not immediately be reflected in search
 	// results due to a short delay in indexing. Duplicate results may be
 	// returned across pages. Some results may not be returned.
 	SearchV2(arg *SearchV2Arg) (res *SearchV2Result, err error)
+	SearchV2Context(ctx context.Context, arg *SearchV2Arg) (res *SearchV2Result, err error)
 	// SearchContinue : Fetches the next page of search results returned from
 	// `search`. Note: `search` along with `searchContinue` can only be used to
 	// retrieve a maximum of 10,000 matches. Recent changes may not immediately
@@ -332,20 +389,25 @@ type Client interface {
 	// Duplicate results may be returned across pages. Some results may not be
 	// returned.
 	SearchContinueV2(arg *SearchV2ContinueArg) (res *SearchV2Result, err error)
+	SearchContinueV2Context(ctx context.Context, arg *SearchV2ContinueArg) (res *SearchV2Result, err error)
 	// TagsAdd : Add a tag to an item. A tag is a string. The strings are
 	// automatically converted to lowercase letters. No more than 20 tags can be
 	// added to a given item.
 	TagsAdd(arg *AddTagArg) (err error)
+	TagsAddContext(ctx context.Context, arg *AddTagArg) (err error)
 	// TagsGet : Get list of tags assigned to items.
 	TagsGet(arg *GetTagsArg) (res *GetTagsResult, err error)
+	TagsGetContext(ctx context.Context, arg *GetTagsArg) (res *GetTagsResult, err error)
 	// TagsRemove : Remove a tag from an item.
 	TagsRemove(arg *RemoveTagArg) (err error)
+	TagsRemoveContext(ctx context.Context, arg *RemoveTagArg) (err error)
 	// UnlockFileBatch : Unlock the files at the given paths. A locked file can
 	// only be unlocked by the lock holder or, if a business account, a team
 	// admin. A successful response indicates that the file has been unlocked.
 	// Returns a list of the unlocked file paths and their metadata after this
 	// operation.
 	UnlockFileBatch(arg *UnlockFileBatchArg) (res *LockFileBatchResult, err error)
+	UnlockFileBatchContext(ctx context.Context, arg *UnlockFileBatchArg) (res *LockFileBatchResult, err error)
 	// Upload : Create a new file with the contents provided in the request. Do
 	// not use this to upload a file larger than 150 MB. Instead, create an
 	// upload session with `uploadSessionStart`. Calls to this endpoint will
@@ -354,15 +416,7 @@ type Client interface {
 	// information, see the `Data transport limit page`
 	// <https://www.dropbox.com/developers/reference/data-transport-limit>.
 	Upload(arg *UploadArg, content io.Reader) (res *FileMetadata, err error)
-	// UploadSessionAppend : Append more data to an upload session. When the
-	// parameter close is set, this call will close the session. A single
-	// request should not upload more than 150 MB. The maximum size of a file
-	// one can upload to an upload session is 350 GB. Calls to this endpoint
-	// will count as data transport calls for any Dropbox Business teams with a
-	// limit on the number of data transport calls allowed per month. For more
-	// information, see the `Data transport limit page`
-	// <https://www.dropbox.com/developers/reference/data-transport-limit>.
-	UploadSessionAppendV2(arg *UploadSessionAppendArg, content io.Reader) (err error)
+	UploadContext(ctx context.Context, arg *UploadArg, content io.Reader) (res *FileMetadata, err error)
 	// UploadSessionAppend : Append more data to an upload session. A single
 	// request should not upload more than 150 MB. The maximum size of a file
 	// one can upload to an upload session is 350 GB. Calls to this endpoint
@@ -372,6 +426,17 @@ type Client interface {
 	// <https://www.dropbox.com/developers/reference/data-transport-limit>.
 	// Deprecated: Use `UploadSessionAppendV2` instead
 	UploadSessionAppend(arg *UploadSessionCursor, content io.Reader) (err error)
+	UploadSessionAppendContext(ctx context.Context, arg *UploadSessionCursor, content io.Reader) (err error)
+	// UploadSessionAppend : Append more data to an upload session. When the
+	// parameter close is set, this call will close the session. A single
+	// request should not upload more than 150 MB. The maximum size of a file
+	// one can upload to an upload session is 350 GB. Calls to this endpoint
+	// will count as data transport calls for any Dropbox Business teams with a
+	// limit on the number of data transport calls allowed per month. For more
+	// information, see the `Data transport limit page`
+	// <https://www.dropbox.com/developers/reference/data-transport-limit>.
+	UploadSessionAppendV2(arg *UploadSessionAppendArg, content io.Reader) (err error)
+	UploadSessionAppendV2Context(ctx context.Context, arg *UploadSessionAppendArg, content io.Reader) (err error)
 	// UploadSessionFinish : Finish an upload session and save the uploaded data
 	// to the given file path. A single request should not upload more than 150
 	// MB. The maximum size of a file one can upload to an upload session is 350
@@ -381,6 +446,7 @@ type Client interface {
 	// page`
 	// <https://www.dropbox.com/developers/reference/data-transport-limit>.
 	UploadSessionFinish(arg *UploadSessionFinishArg, content io.Reader) (res *FileMetadata, err error)
+	UploadSessionFinishContext(ctx context.Context, arg *UploadSessionFinishArg, content io.Reader) (res *FileMetadata, err error)
 	// UploadSessionFinishBatch : This route helps you commit many files at once
 	// into a user's Dropbox. Use `uploadSessionStart` and `uploadSessionAppend`
 	// to upload file contents. We recommend uploading many files in parallel to
@@ -401,6 +467,7 @@ type Client interface {
 	// <https://www.dropbox.com/developers/reference/data-transport-limit>.
 	// Deprecated: Use `UploadSessionFinishBatchV2` instead
 	UploadSessionFinishBatch(arg *UploadSessionFinishBatchArg) (res *UploadSessionFinishBatchLaunch, err error)
+	UploadSessionFinishBatchContext(ctx context.Context, arg *UploadSessionFinishBatchArg) (res *UploadSessionFinishBatchLaunch, err error)
 	// UploadSessionFinishBatch : This route helps you commit many files at once
 	// into a user's Dropbox. Use `uploadSessionStart` and `uploadSessionAppend`
 	// to upload file contents. We recommend uploading many files in parallel to
@@ -416,10 +483,12 @@ type Client interface {
 	// month. For more information, see the `Data transport limit page`
 	// <https://www.dropbox.com/developers/reference/data-transport-limit>.
 	UploadSessionFinishBatchV2(arg *UploadSessionFinishBatchArg) (res *UploadSessionFinishBatchResult, err error)
+	UploadSessionFinishBatchV2Context(ctx context.Context, arg *UploadSessionFinishBatchArg) (res *UploadSessionFinishBatchResult, err error)
 	// UploadSessionFinishBatchCheck : Returns the status of an asynchronous job
 	// for `uploadSessionFinishBatch`. If success, it returns list of result for
 	// each entry.
 	UploadSessionFinishBatchCheck(arg *async.PollArg) (res *UploadSessionFinishBatchJobStatus, err error)
+	UploadSessionFinishBatchCheckContext(ctx context.Context, arg *async.PollArg) (res *UploadSessionFinishBatchJobStatus, err error)
 	// UploadSessionStart : Upload sessions allow you to upload a single file in
 	// one or more requests, for example where the size of the file is greater
 	// than 150 MB.  This call starts a new upload session with the given data.
@@ -451,6 +520,7 @@ type Client interface {
 	// `uploadSessionAppend` with `UploadSessionStartArg.close` to true, that
 	// may contain any remaining data).
 	UploadSessionStart(arg *UploadSessionStartArg, content io.Reader) (res *UploadSessionStartResult, err error)
+	UploadSessionStartContext(ctx context.Context, arg *UploadSessionStartArg, content io.Reader) (res *UploadSessionStartResult, err error)
 	// UploadSessionStartBatch : This route starts batch of upload_sessions.
 	// Please refer to `upload_session/start` usage. Calls to this endpoint will
 	// count as data transport calls for any Dropbox Business teams with a limit
@@ -458,17 +528,18 @@ type Client interface {
 	// information, see the `Data transport limit page`
 	// <https://www.dropbox.com/developers/reference/data-transport-limit>.
 	UploadSessionStartBatch(arg *UploadSessionStartBatchArg) (res *UploadSessionStartBatchResult, err error)
+	UploadSessionStartBatchContext(ctx context.Context, arg *UploadSessionStartBatchArg) (res *UploadSessionStartBatchResult, err error)
 }
 
 type apiImpl dropbox.Context
 
-//AlphaGetMetadataAPIError is an error-wrapper for the alpha/get_metadata route
+// AlphaGetMetadataAPIError is an error-wrapper for the alpha/get_metadata route
 type AlphaGetMetadataAPIError struct {
 	dropbox.APIError
 	EndpointError *AlphaGetMetadataError `json:"error"`
 }
 
-func (dbx *apiImpl) AlphaGetMetadata(arg *AlphaGetMetadataArg) (res IsMetadata, err error) {
+func (dbx *apiImpl) AlphaGetMetadataContext(ctx context.Context, arg *AlphaGetMetadataArg) (res IsMetadata, err error) {
 	log.Printf("WARNING: API `AlphaGetMetadata` is deprecated")
 	log.Printf("Use API `GetMetadata` instead")
 
@@ -484,11 +555,11 @@ func (dbx *apiImpl) AlphaGetMetadata(arg *AlphaGetMetadataArg) (res IsMetadata, 
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr AlphaGetMetadataAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -514,13 +585,17 @@ func (dbx *apiImpl) AlphaGetMetadata(arg *AlphaGetMetadataArg) (res IsMetadata, 
 	return
 }
 
-//AlphaUploadAPIError is an error-wrapper for the alpha/upload route
+func (dbx *apiImpl) AlphaGetMetadata(arg *AlphaGetMetadataArg) (res IsMetadata, err error) {
+	return dbx.AlphaGetMetadataContext(context.Background(), arg)
+}
+
+// AlphaUploadAPIError is an error-wrapper for the alpha/upload route
 type AlphaUploadAPIError struct {
 	dropbox.APIError
 	EndpointError *UploadError `json:"error"`
 }
 
-func (dbx *apiImpl) AlphaUpload(arg *UploadArg, content io.Reader) (res *FileMetadata, err error) {
+func (dbx *apiImpl) AlphaUploadContext(ctx context.Context, arg *UploadArg, content io.Reader) (res *FileMetadata, err error) {
 	log.Printf("WARNING: API `AlphaUpload` is deprecated")
 	log.Printf("Use API `Upload` instead")
 
@@ -536,11 +611,11 @@ func (dbx *apiImpl) AlphaUpload(arg *UploadArg, content io.Reader) (res *FileMet
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, content)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, content)
 	if err != nil {
 		var appErr AlphaUploadAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -555,51 +630,17 @@ func (dbx *apiImpl) AlphaUpload(arg *UploadArg, content io.Reader) (res *FileMet
 	return
 }
 
-//CopyV2APIError is an error-wrapper for the copy_v2 route
-type CopyV2APIError struct {
-	dropbox.APIError
-	EndpointError *RelocationError `json:"error"`
+func (dbx *apiImpl) AlphaUpload(arg *UploadArg, content io.Reader) (res *FileMetadata, err error) {
+	return dbx.AlphaUploadContext(context.Background(), arg, content)
 }
 
-func (dbx *apiImpl) CopyV2(arg *RelocationArg) (res *RelocationResult, err error) {
-	req := dropbox.Request{
-		Host:         "api",
-		Namespace:    "files",
-		Route:        "copy_v2",
-		Auth:         "user",
-		Style:        "rpc",
-		Arg:          arg,
-		ExtraHeaders: nil,
-	}
-
-	var resp []byte
-	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
-	if err != nil {
-		var appErr CopyV2APIError
-		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
-			err = appErr
-		}
-		return
-	}
-
-	err = json.Unmarshal(resp, &res)
-	if err != nil {
-		return
-	}
-
-	_ = respBody
-	return
-}
-
-//CopyAPIError is an error-wrapper for the copy route
+// CopyAPIError is an error-wrapper for the copy route
 type CopyAPIError struct {
 	dropbox.APIError
 	EndpointError *RelocationError `json:"error"`
 }
 
-func (dbx *apiImpl) Copy(arg *RelocationArg) (res IsMetadata, err error) {
+func (dbx *apiImpl) CopyContext(ctx context.Context, arg *RelocationArg) (res IsMetadata, err error) {
 	log.Printf("WARNING: API `Copy` is deprecated")
 	log.Printf("Use API `CopyV2` instead")
 
@@ -615,11 +656,11 @@ func (dbx *apiImpl) Copy(arg *RelocationArg) (res IsMetadata, err error) {
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr CopyAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -645,17 +686,21 @@ func (dbx *apiImpl) Copy(arg *RelocationArg) (res IsMetadata, err error) {
 	return
 }
 
-//CopyBatchV2APIError is an error-wrapper for the copy_batch_v2 route
-type CopyBatchV2APIError struct {
-	dropbox.APIError
-	EndpointError struct{} `json:"error"`
+func (dbx *apiImpl) Copy(arg *RelocationArg) (res IsMetadata, err error) {
+	return dbx.CopyContext(context.Background(), arg)
 }
 
-func (dbx *apiImpl) CopyBatchV2(arg *RelocationBatchArgBase) (res *RelocationBatchV2Launch, err error) {
+// CopyV2APIError is an error-wrapper for the copy_v2 route
+type CopyV2APIError struct {
+	dropbox.APIError
+	EndpointError *RelocationError `json:"error"`
+}
+
+func (dbx *apiImpl) CopyV2Context(ctx context.Context, arg *RelocationArg) (res *RelocationResult, err error) {
 	req := dropbox.Request{
 		Host:         "api",
 		Namespace:    "files",
-		Route:        "copy_batch_v2",
+		Route:        "copy_v2",
 		Auth:         "user",
 		Style:        "rpc",
 		Arg:          arg,
@@ -664,11 +709,11 @@ func (dbx *apiImpl) CopyBatchV2(arg *RelocationBatchArgBase) (res *RelocationBat
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
-		var appErr CopyBatchV2APIError
+		var appErr CopyV2APIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -683,13 +728,17 @@ func (dbx *apiImpl) CopyBatchV2(arg *RelocationBatchArgBase) (res *RelocationBat
 	return
 }
 
-//CopyBatchAPIError is an error-wrapper for the copy_batch route
+func (dbx *apiImpl) CopyV2(arg *RelocationArg) (res *RelocationResult, err error) {
+	return dbx.CopyV2Context(context.Background(), arg)
+}
+
+// CopyBatchAPIError is an error-wrapper for the copy_batch route
 type CopyBatchAPIError struct {
 	dropbox.APIError
 	EndpointError struct{} `json:"error"`
 }
 
-func (dbx *apiImpl) CopyBatch(arg *RelocationBatchArg) (res *RelocationBatchLaunch, err error) {
+func (dbx *apiImpl) CopyBatchContext(ctx context.Context, arg *RelocationBatchArg) (res *RelocationBatchLaunch, err error) {
 	log.Printf("WARNING: API `CopyBatch` is deprecated")
 	log.Printf("Use API `CopyBatchV2` instead")
 
@@ -705,11 +754,11 @@ func (dbx *apiImpl) CopyBatch(arg *RelocationBatchArg) (res *RelocationBatchLaun
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr CopyBatchAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -724,17 +773,21 @@ func (dbx *apiImpl) CopyBatch(arg *RelocationBatchArg) (res *RelocationBatchLaun
 	return
 }
 
-//CopyBatchCheckV2APIError is an error-wrapper for the copy_batch/check_v2 route
-type CopyBatchCheckV2APIError struct {
-	dropbox.APIError
-	EndpointError *async.PollError `json:"error"`
+func (dbx *apiImpl) CopyBatch(arg *RelocationBatchArg) (res *RelocationBatchLaunch, err error) {
+	return dbx.CopyBatchContext(context.Background(), arg)
 }
 
-func (dbx *apiImpl) CopyBatchCheckV2(arg *async.PollArg) (res *RelocationBatchV2JobStatus, err error) {
+// CopyBatchV2APIError is an error-wrapper for the copy_batch_v2 route
+type CopyBatchV2APIError struct {
+	dropbox.APIError
+	EndpointError struct{} `json:"error"`
+}
+
+func (dbx *apiImpl) CopyBatchV2Context(ctx context.Context, arg *RelocationBatchArgBase) (res *RelocationBatchV2Launch, err error) {
 	req := dropbox.Request{
 		Host:         "api",
 		Namespace:    "files",
-		Route:        "copy_batch/check_v2",
+		Route:        "copy_batch_v2",
 		Auth:         "user",
 		Style:        "rpc",
 		Arg:          arg,
@@ -743,11 +796,11 @@ func (dbx *apiImpl) CopyBatchCheckV2(arg *async.PollArg) (res *RelocationBatchV2
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
-		var appErr CopyBatchCheckV2APIError
+		var appErr CopyBatchV2APIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -762,13 +815,17 @@ func (dbx *apiImpl) CopyBatchCheckV2(arg *async.PollArg) (res *RelocationBatchV2
 	return
 }
 
-//CopyBatchCheckAPIError is an error-wrapper for the copy_batch/check route
+func (dbx *apiImpl) CopyBatchV2(arg *RelocationBatchArgBase) (res *RelocationBatchV2Launch, err error) {
+	return dbx.CopyBatchV2Context(context.Background(), arg)
+}
+
+// CopyBatchCheckAPIError is an error-wrapper for the copy_batch/check route
 type CopyBatchCheckAPIError struct {
 	dropbox.APIError
 	EndpointError *async.PollError `json:"error"`
 }
 
-func (dbx *apiImpl) CopyBatchCheck(arg *async.PollArg) (res *RelocationBatchJobStatus, err error) {
+func (dbx *apiImpl) CopyBatchCheckContext(ctx context.Context, arg *async.PollArg) (res *RelocationBatchJobStatus, err error) {
 	log.Printf("WARNING: API `CopyBatchCheck` is deprecated")
 	log.Printf("Use API `CopyBatchCheckV2` instead")
 
@@ -784,11 +841,11 @@ func (dbx *apiImpl) CopyBatchCheck(arg *async.PollArg) (res *RelocationBatchJobS
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr CopyBatchCheckAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -803,13 +860,59 @@ func (dbx *apiImpl) CopyBatchCheck(arg *async.PollArg) (res *RelocationBatchJobS
 	return
 }
 
-//CopyReferenceGetAPIError is an error-wrapper for the copy_reference/get route
+func (dbx *apiImpl) CopyBatchCheck(arg *async.PollArg) (res *RelocationBatchJobStatus, err error) {
+	return dbx.CopyBatchCheckContext(context.Background(), arg)
+}
+
+// CopyBatchCheckV2APIError is an error-wrapper for the copy_batch/check_v2 route
+type CopyBatchCheckV2APIError struct {
+	dropbox.APIError
+	EndpointError *async.PollError `json:"error"`
+}
+
+func (dbx *apiImpl) CopyBatchCheckV2Context(ctx context.Context, arg *async.PollArg) (res *RelocationBatchV2JobStatus, err error) {
+	req := dropbox.Request{
+		Host:         "api",
+		Namespace:    "files",
+		Route:        "copy_batch/check_v2",
+		Auth:         "user",
+		Style:        "rpc",
+		Arg:          arg,
+		ExtraHeaders: nil,
+	}
+
+	var resp []byte
+	var respBody io.ReadCloser
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
+	if err != nil {
+		var appErr CopyBatchCheckV2APIError
+		err = auth.ParseError(err, &appErr)
+		if errors.Is(err, &appErr) {
+			err = appErr
+		}
+		return
+	}
+
+	err = json.Unmarshal(resp, &res)
+	if err != nil {
+		return
+	}
+
+	_ = respBody
+	return
+}
+
+func (dbx *apiImpl) CopyBatchCheckV2(arg *async.PollArg) (res *RelocationBatchV2JobStatus, err error) {
+	return dbx.CopyBatchCheckV2Context(context.Background(), arg)
+}
+
+// CopyReferenceGetAPIError is an error-wrapper for the copy_reference/get route
 type CopyReferenceGetAPIError struct {
 	dropbox.APIError
 	EndpointError *GetCopyReferenceError `json:"error"`
 }
 
-func (dbx *apiImpl) CopyReferenceGet(arg *GetCopyReferenceArg) (res *GetCopyReferenceResult, err error) {
+func (dbx *apiImpl) CopyReferenceGetContext(ctx context.Context, arg *GetCopyReferenceArg) (res *GetCopyReferenceResult, err error) {
 	req := dropbox.Request{
 		Host:         "api",
 		Namespace:    "files",
@@ -822,11 +925,11 @@ func (dbx *apiImpl) CopyReferenceGet(arg *GetCopyReferenceArg) (res *GetCopyRefe
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr CopyReferenceGetAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -841,13 +944,17 @@ func (dbx *apiImpl) CopyReferenceGet(arg *GetCopyReferenceArg) (res *GetCopyRefe
 	return
 }
 
-//CopyReferenceSaveAPIError is an error-wrapper for the copy_reference/save route
+func (dbx *apiImpl) CopyReferenceGet(arg *GetCopyReferenceArg) (res *GetCopyReferenceResult, err error) {
+	return dbx.CopyReferenceGetContext(context.Background(), arg)
+}
+
+// CopyReferenceSaveAPIError is an error-wrapper for the copy_reference/save route
 type CopyReferenceSaveAPIError struct {
 	dropbox.APIError
 	EndpointError *SaveCopyReferenceError `json:"error"`
 }
 
-func (dbx *apiImpl) CopyReferenceSave(arg *SaveCopyReferenceArg) (res *SaveCopyReferenceResult, err error) {
+func (dbx *apiImpl) CopyReferenceSaveContext(ctx context.Context, arg *SaveCopyReferenceArg) (res *SaveCopyReferenceResult, err error) {
 	req := dropbox.Request{
 		Host:         "api",
 		Namespace:    "files",
@@ -860,11 +967,11 @@ func (dbx *apiImpl) CopyReferenceSave(arg *SaveCopyReferenceArg) (res *SaveCopyR
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr CopyReferenceSaveAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -879,51 +986,17 @@ func (dbx *apiImpl) CopyReferenceSave(arg *SaveCopyReferenceArg) (res *SaveCopyR
 	return
 }
 
-//CreateFolderV2APIError is an error-wrapper for the create_folder_v2 route
-type CreateFolderV2APIError struct {
-	dropbox.APIError
-	EndpointError *CreateFolderError `json:"error"`
+func (dbx *apiImpl) CopyReferenceSave(arg *SaveCopyReferenceArg) (res *SaveCopyReferenceResult, err error) {
+	return dbx.CopyReferenceSaveContext(context.Background(), arg)
 }
 
-func (dbx *apiImpl) CreateFolderV2(arg *CreateFolderArg) (res *CreateFolderResult, err error) {
-	req := dropbox.Request{
-		Host:         "api",
-		Namespace:    "files",
-		Route:        "create_folder_v2",
-		Auth:         "user",
-		Style:        "rpc",
-		Arg:          arg,
-		ExtraHeaders: nil,
-	}
-
-	var resp []byte
-	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
-	if err != nil {
-		var appErr CreateFolderV2APIError
-		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
-			err = appErr
-		}
-		return
-	}
-
-	err = json.Unmarshal(resp, &res)
-	if err != nil {
-		return
-	}
-
-	_ = respBody
-	return
-}
-
-//CreateFolderAPIError is an error-wrapper for the create_folder route
+// CreateFolderAPIError is an error-wrapper for the create_folder route
 type CreateFolderAPIError struct {
 	dropbox.APIError
 	EndpointError *CreateFolderError `json:"error"`
 }
 
-func (dbx *apiImpl) CreateFolder(arg *CreateFolderArg) (res *FolderMetadata, err error) {
+func (dbx *apiImpl) CreateFolderContext(ctx context.Context, arg *CreateFolderArg) (res *FolderMetadata, err error) {
 	log.Printf("WARNING: API `CreateFolder` is deprecated")
 	log.Printf("Use API `CreateFolderV2` instead")
 
@@ -939,11 +1012,11 @@ func (dbx *apiImpl) CreateFolder(arg *CreateFolderArg) (res *FolderMetadata, err
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr CreateFolderAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -958,13 +1031,59 @@ func (dbx *apiImpl) CreateFolder(arg *CreateFolderArg) (res *FolderMetadata, err
 	return
 }
 
-//CreateFolderBatchAPIError is an error-wrapper for the create_folder_batch route
+func (dbx *apiImpl) CreateFolder(arg *CreateFolderArg) (res *FolderMetadata, err error) {
+	return dbx.CreateFolderContext(context.Background(), arg)
+}
+
+// CreateFolderV2APIError is an error-wrapper for the create_folder_v2 route
+type CreateFolderV2APIError struct {
+	dropbox.APIError
+	EndpointError *CreateFolderError `json:"error"`
+}
+
+func (dbx *apiImpl) CreateFolderV2Context(ctx context.Context, arg *CreateFolderArg) (res *CreateFolderResult, err error) {
+	req := dropbox.Request{
+		Host:         "api",
+		Namespace:    "files",
+		Route:        "create_folder_v2",
+		Auth:         "user",
+		Style:        "rpc",
+		Arg:          arg,
+		ExtraHeaders: nil,
+	}
+
+	var resp []byte
+	var respBody io.ReadCloser
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
+	if err != nil {
+		var appErr CreateFolderV2APIError
+		err = auth.ParseError(err, &appErr)
+		if errors.Is(err, &appErr) {
+			err = appErr
+		}
+		return
+	}
+
+	err = json.Unmarshal(resp, &res)
+	if err != nil {
+		return
+	}
+
+	_ = respBody
+	return
+}
+
+func (dbx *apiImpl) CreateFolderV2(arg *CreateFolderArg) (res *CreateFolderResult, err error) {
+	return dbx.CreateFolderV2Context(context.Background(), arg)
+}
+
+// CreateFolderBatchAPIError is an error-wrapper for the create_folder_batch route
 type CreateFolderBatchAPIError struct {
 	dropbox.APIError
 	EndpointError struct{} `json:"error"`
 }
 
-func (dbx *apiImpl) CreateFolderBatch(arg *CreateFolderBatchArg) (res *CreateFolderBatchLaunch, err error) {
+func (dbx *apiImpl) CreateFolderBatchContext(ctx context.Context, arg *CreateFolderBatchArg) (res *CreateFolderBatchLaunch, err error) {
 	req := dropbox.Request{
 		Host:         "api",
 		Namespace:    "files",
@@ -977,11 +1096,11 @@ func (dbx *apiImpl) CreateFolderBatch(arg *CreateFolderBatchArg) (res *CreateFol
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr CreateFolderBatchAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -996,13 +1115,17 @@ func (dbx *apiImpl) CreateFolderBatch(arg *CreateFolderBatchArg) (res *CreateFol
 	return
 }
 
-//CreateFolderBatchCheckAPIError is an error-wrapper for the create_folder_batch/check route
+func (dbx *apiImpl) CreateFolderBatch(arg *CreateFolderBatchArg) (res *CreateFolderBatchLaunch, err error) {
+	return dbx.CreateFolderBatchContext(context.Background(), arg)
+}
+
+// CreateFolderBatchCheckAPIError is an error-wrapper for the create_folder_batch/check route
 type CreateFolderBatchCheckAPIError struct {
 	dropbox.APIError
 	EndpointError *async.PollError `json:"error"`
 }
 
-func (dbx *apiImpl) CreateFolderBatchCheck(arg *async.PollArg) (res *CreateFolderBatchJobStatus, err error) {
+func (dbx *apiImpl) CreateFolderBatchCheckContext(ctx context.Context, arg *async.PollArg) (res *CreateFolderBatchJobStatus, err error) {
 	req := dropbox.Request{
 		Host:         "api",
 		Namespace:    "files",
@@ -1015,11 +1138,11 @@ func (dbx *apiImpl) CreateFolderBatchCheck(arg *async.PollArg) (res *CreateFolde
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr CreateFolderBatchCheckAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -1034,51 +1157,17 @@ func (dbx *apiImpl) CreateFolderBatchCheck(arg *async.PollArg) (res *CreateFolde
 	return
 }
 
-//DeleteV2APIError is an error-wrapper for the delete_v2 route
-type DeleteV2APIError struct {
-	dropbox.APIError
-	EndpointError *DeleteError `json:"error"`
+func (dbx *apiImpl) CreateFolderBatchCheck(arg *async.PollArg) (res *CreateFolderBatchJobStatus, err error) {
+	return dbx.CreateFolderBatchCheckContext(context.Background(), arg)
 }
 
-func (dbx *apiImpl) DeleteV2(arg *DeleteArg) (res *DeleteResult, err error) {
-	req := dropbox.Request{
-		Host:         "api",
-		Namespace:    "files",
-		Route:        "delete_v2",
-		Auth:         "user",
-		Style:        "rpc",
-		Arg:          arg,
-		ExtraHeaders: nil,
-	}
-
-	var resp []byte
-	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
-	if err != nil {
-		var appErr DeleteV2APIError
-		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
-			err = appErr
-		}
-		return
-	}
-
-	err = json.Unmarshal(resp, &res)
-	if err != nil {
-		return
-	}
-
-	_ = respBody
-	return
-}
-
-//DeleteAPIError is an error-wrapper for the delete route
+// DeleteAPIError is an error-wrapper for the delete route
 type DeleteAPIError struct {
 	dropbox.APIError
 	EndpointError *DeleteError `json:"error"`
 }
 
-func (dbx *apiImpl) Delete(arg *DeleteArg) (res IsMetadata, err error) {
+func (dbx *apiImpl) DeleteContext(ctx context.Context, arg *DeleteArg) (res IsMetadata, err error) {
 	log.Printf("WARNING: API `Delete` is deprecated")
 	log.Printf("Use API `DeleteV2` instead")
 
@@ -1094,11 +1183,11 @@ func (dbx *apiImpl) Delete(arg *DeleteArg) (res IsMetadata, err error) {
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr DeleteAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -1124,13 +1213,59 @@ func (dbx *apiImpl) Delete(arg *DeleteArg) (res IsMetadata, err error) {
 	return
 }
 
-//DeleteBatchAPIError is an error-wrapper for the delete_batch route
+func (dbx *apiImpl) Delete(arg *DeleteArg) (res IsMetadata, err error) {
+	return dbx.DeleteContext(context.Background(), arg)
+}
+
+// DeleteV2APIError is an error-wrapper for the delete_v2 route
+type DeleteV2APIError struct {
+	dropbox.APIError
+	EndpointError *DeleteError `json:"error"`
+}
+
+func (dbx *apiImpl) DeleteV2Context(ctx context.Context, arg *DeleteArg) (res *DeleteResult, err error) {
+	req := dropbox.Request{
+		Host:         "api",
+		Namespace:    "files",
+		Route:        "delete_v2",
+		Auth:         "user",
+		Style:        "rpc",
+		Arg:          arg,
+		ExtraHeaders: nil,
+	}
+
+	var resp []byte
+	var respBody io.ReadCloser
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
+	if err != nil {
+		var appErr DeleteV2APIError
+		err = auth.ParseError(err, &appErr)
+		if errors.Is(err, &appErr) {
+			err = appErr
+		}
+		return
+	}
+
+	err = json.Unmarshal(resp, &res)
+	if err != nil {
+		return
+	}
+
+	_ = respBody
+	return
+}
+
+func (dbx *apiImpl) DeleteV2(arg *DeleteArg) (res *DeleteResult, err error) {
+	return dbx.DeleteV2Context(context.Background(), arg)
+}
+
+// DeleteBatchAPIError is an error-wrapper for the delete_batch route
 type DeleteBatchAPIError struct {
 	dropbox.APIError
 	EndpointError struct{} `json:"error"`
 }
 
-func (dbx *apiImpl) DeleteBatch(arg *DeleteBatchArg) (res *DeleteBatchLaunch, err error) {
+func (dbx *apiImpl) DeleteBatchContext(ctx context.Context, arg *DeleteBatchArg) (res *DeleteBatchLaunch, err error) {
 	req := dropbox.Request{
 		Host:         "api",
 		Namespace:    "files",
@@ -1143,11 +1278,11 @@ func (dbx *apiImpl) DeleteBatch(arg *DeleteBatchArg) (res *DeleteBatchLaunch, er
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr DeleteBatchAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -1162,13 +1297,17 @@ func (dbx *apiImpl) DeleteBatch(arg *DeleteBatchArg) (res *DeleteBatchLaunch, er
 	return
 }
 
-//DeleteBatchCheckAPIError is an error-wrapper for the delete_batch/check route
+func (dbx *apiImpl) DeleteBatch(arg *DeleteBatchArg) (res *DeleteBatchLaunch, err error) {
+	return dbx.DeleteBatchContext(context.Background(), arg)
+}
+
+// DeleteBatchCheckAPIError is an error-wrapper for the delete_batch/check route
 type DeleteBatchCheckAPIError struct {
 	dropbox.APIError
 	EndpointError *async.PollError `json:"error"`
 }
 
-func (dbx *apiImpl) DeleteBatchCheck(arg *async.PollArg) (res *DeleteBatchJobStatus, err error) {
+func (dbx *apiImpl) DeleteBatchCheckContext(ctx context.Context, arg *async.PollArg) (res *DeleteBatchJobStatus, err error) {
 	req := dropbox.Request{
 		Host:         "api",
 		Namespace:    "files",
@@ -1181,11 +1320,11 @@ func (dbx *apiImpl) DeleteBatchCheck(arg *async.PollArg) (res *DeleteBatchJobSta
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr DeleteBatchCheckAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -1200,13 +1339,17 @@ func (dbx *apiImpl) DeleteBatchCheck(arg *async.PollArg) (res *DeleteBatchJobSta
 	return
 }
 
-//DownloadAPIError is an error-wrapper for the download route
+func (dbx *apiImpl) DeleteBatchCheck(arg *async.PollArg) (res *DeleteBatchJobStatus, err error) {
+	return dbx.DeleteBatchCheckContext(context.Background(), arg)
+}
+
+// DownloadAPIError is an error-wrapper for the download route
 type DownloadAPIError struct {
 	dropbox.APIError
 	EndpointError *DownloadError `json:"error"`
 }
 
-func (dbx *apiImpl) Download(arg *DownloadArg) (res *FileMetadata, content io.ReadCloser, err error) {
+func (dbx *apiImpl) DownloadContext(ctx context.Context, arg *DownloadArg) (res *FileMetadata, content io.ReadCloser, err error) {
 	req := dropbox.Request{
 		Host:         "content",
 		Namespace:    "files",
@@ -1219,11 +1362,11 @@ func (dbx *apiImpl) Download(arg *DownloadArg) (res *FileMetadata, content io.Re
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr DownloadAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -1238,13 +1381,17 @@ func (dbx *apiImpl) Download(arg *DownloadArg) (res *FileMetadata, content io.Re
 	return
 }
 
-//DownloadZipAPIError is an error-wrapper for the download_zip route
+func (dbx *apiImpl) Download(arg *DownloadArg) (res *FileMetadata, content io.ReadCloser, err error) {
+	return dbx.DownloadContext(context.Background(), arg)
+}
+
+// DownloadZipAPIError is an error-wrapper for the download_zip route
 type DownloadZipAPIError struct {
 	dropbox.APIError
 	EndpointError *DownloadZipError `json:"error"`
 }
 
-func (dbx *apiImpl) DownloadZip(arg *DownloadZipArg) (res *DownloadZipResult, content io.ReadCloser, err error) {
+func (dbx *apiImpl) DownloadZipContext(ctx context.Context, arg *DownloadZipArg) (res *DownloadZipResult, content io.ReadCloser, err error) {
 	req := dropbox.Request{
 		Host:         "content",
 		Namespace:    "files",
@@ -1257,11 +1404,11 @@ func (dbx *apiImpl) DownloadZip(arg *DownloadZipArg) (res *DownloadZipResult, co
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr DownloadZipAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -1276,13 +1423,17 @@ func (dbx *apiImpl) DownloadZip(arg *DownloadZipArg) (res *DownloadZipResult, co
 	return
 }
 
-//ExportAPIError is an error-wrapper for the export route
+func (dbx *apiImpl) DownloadZip(arg *DownloadZipArg) (res *DownloadZipResult, content io.ReadCloser, err error) {
+	return dbx.DownloadZipContext(context.Background(), arg)
+}
+
+// ExportAPIError is an error-wrapper for the export route
 type ExportAPIError struct {
 	dropbox.APIError
 	EndpointError *ExportError `json:"error"`
 }
 
-func (dbx *apiImpl) Export(arg *ExportArg) (res *ExportResult, content io.ReadCloser, err error) {
+func (dbx *apiImpl) ExportContext(ctx context.Context, arg *ExportArg) (res *ExportResult, content io.ReadCloser, err error) {
 	req := dropbox.Request{
 		Host:         "content",
 		Namespace:    "files",
@@ -1295,11 +1446,11 @@ func (dbx *apiImpl) Export(arg *ExportArg) (res *ExportResult, content io.ReadCl
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr ExportAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -1314,13 +1465,17 @@ func (dbx *apiImpl) Export(arg *ExportArg) (res *ExportResult, content io.ReadCl
 	return
 }
 
-//GetFileLockBatchAPIError is an error-wrapper for the get_file_lock_batch route
+func (dbx *apiImpl) Export(arg *ExportArg) (res *ExportResult, content io.ReadCloser, err error) {
+	return dbx.ExportContext(context.Background(), arg)
+}
+
+// GetFileLockBatchAPIError is an error-wrapper for the get_file_lock_batch route
 type GetFileLockBatchAPIError struct {
 	dropbox.APIError
 	EndpointError *LockFileError `json:"error"`
 }
 
-func (dbx *apiImpl) GetFileLockBatch(arg *LockFileBatchArg) (res *LockFileBatchResult, err error) {
+func (dbx *apiImpl) GetFileLockBatchContext(ctx context.Context, arg *LockFileBatchArg) (res *LockFileBatchResult, err error) {
 	req := dropbox.Request{
 		Host:         "api",
 		Namespace:    "files",
@@ -1333,11 +1488,11 @@ func (dbx *apiImpl) GetFileLockBatch(arg *LockFileBatchArg) (res *LockFileBatchR
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr GetFileLockBatchAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -1352,13 +1507,17 @@ func (dbx *apiImpl) GetFileLockBatch(arg *LockFileBatchArg) (res *LockFileBatchR
 	return
 }
 
-//GetMetadataAPIError is an error-wrapper for the get_metadata route
+func (dbx *apiImpl) GetFileLockBatch(arg *LockFileBatchArg) (res *LockFileBatchResult, err error) {
+	return dbx.GetFileLockBatchContext(context.Background(), arg)
+}
+
+// GetMetadataAPIError is an error-wrapper for the get_metadata route
 type GetMetadataAPIError struct {
 	dropbox.APIError
 	EndpointError *GetMetadataError `json:"error"`
 }
 
-func (dbx *apiImpl) GetMetadata(arg *GetMetadataArg) (res IsMetadata, err error) {
+func (dbx *apiImpl) GetMetadataContext(ctx context.Context, arg *GetMetadataArg) (res IsMetadata, err error) {
 	req := dropbox.Request{
 		Host:         "api",
 		Namespace:    "files",
@@ -1371,11 +1530,11 @@ func (dbx *apiImpl) GetMetadata(arg *GetMetadataArg) (res IsMetadata, err error)
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr GetMetadataAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -1401,13 +1560,17 @@ func (dbx *apiImpl) GetMetadata(arg *GetMetadataArg) (res IsMetadata, err error)
 	return
 }
 
-//GetPreviewAPIError is an error-wrapper for the get_preview route
+func (dbx *apiImpl) GetMetadata(arg *GetMetadataArg) (res IsMetadata, err error) {
+	return dbx.GetMetadataContext(context.Background(), arg)
+}
+
+// GetPreviewAPIError is an error-wrapper for the get_preview route
 type GetPreviewAPIError struct {
 	dropbox.APIError
 	EndpointError *PreviewError `json:"error"`
 }
 
-func (dbx *apiImpl) GetPreview(arg *PreviewArg) (res *FileMetadata, content io.ReadCloser, err error) {
+func (dbx *apiImpl) GetPreviewContext(ctx context.Context, arg *PreviewArg) (res *FileMetadata, content io.ReadCloser, err error) {
 	req := dropbox.Request{
 		Host:         "content",
 		Namespace:    "files",
@@ -1420,11 +1583,11 @@ func (dbx *apiImpl) GetPreview(arg *PreviewArg) (res *FileMetadata, content io.R
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr GetPreviewAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -1439,13 +1602,17 @@ func (dbx *apiImpl) GetPreview(arg *PreviewArg) (res *FileMetadata, content io.R
 	return
 }
 
-//GetTemporaryLinkAPIError is an error-wrapper for the get_temporary_link route
+func (dbx *apiImpl) GetPreview(arg *PreviewArg) (res *FileMetadata, content io.ReadCloser, err error) {
+	return dbx.GetPreviewContext(context.Background(), arg)
+}
+
+// GetTemporaryLinkAPIError is an error-wrapper for the get_temporary_link route
 type GetTemporaryLinkAPIError struct {
 	dropbox.APIError
 	EndpointError *GetTemporaryLinkError `json:"error"`
 }
 
-func (dbx *apiImpl) GetTemporaryLink(arg *GetTemporaryLinkArg) (res *GetTemporaryLinkResult, err error) {
+func (dbx *apiImpl) GetTemporaryLinkContext(ctx context.Context, arg *GetTemporaryLinkArg) (res *GetTemporaryLinkResult, err error) {
 	req := dropbox.Request{
 		Host:         "api",
 		Namespace:    "files",
@@ -1458,11 +1625,11 @@ func (dbx *apiImpl) GetTemporaryLink(arg *GetTemporaryLinkArg) (res *GetTemporar
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr GetTemporaryLinkAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -1477,13 +1644,17 @@ func (dbx *apiImpl) GetTemporaryLink(arg *GetTemporaryLinkArg) (res *GetTemporar
 	return
 }
 
-//GetTemporaryUploadLinkAPIError is an error-wrapper for the get_temporary_upload_link route
+func (dbx *apiImpl) GetTemporaryLink(arg *GetTemporaryLinkArg) (res *GetTemporaryLinkResult, err error) {
+	return dbx.GetTemporaryLinkContext(context.Background(), arg)
+}
+
+// GetTemporaryUploadLinkAPIError is an error-wrapper for the get_temporary_upload_link route
 type GetTemporaryUploadLinkAPIError struct {
 	dropbox.APIError
 	EndpointError struct{} `json:"error"`
 }
 
-func (dbx *apiImpl) GetTemporaryUploadLink(arg *GetTemporaryUploadLinkArg) (res *GetTemporaryUploadLinkResult, err error) {
+func (dbx *apiImpl) GetTemporaryUploadLinkContext(ctx context.Context, arg *GetTemporaryUploadLinkArg) (res *GetTemporaryUploadLinkResult, err error) {
 	req := dropbox.Request{
 		Host:         "api",
 		Namespace:    "files",
@@ -1496,11 +1667,11 @@ func (dbx *apiImpl) GetTemporaryUploadLink(arg *GetTemporaryUploadLinkArg) (res 
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr GetTemporaryUploadLinkAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -1515,13 +1686,17 @@ func (dbx *apiImpl) GetTemporaryUploadLink(arg *GetTemporaryUploadLinkArg) (res 
 	return
 }
 
-//GetThumbnailAPIError is an error-wrapper for the get_thumbnail route
+func (dbx *apiImpl) GetTemporaryUploadLink(arg *GetTemporaryUploadLinkArg) (res *GetTemporaryUploadLinkResult, err error) {
+	return dbx.GetTemporaryUploadLinkContext(context.Background(), arg)
+}
+
+// GetThumbnailAPIError is an error-wrapper for the get_thumbnail route
 type GetThumbnailAPIError struct {
 	dropbox.APIError
 	EndpointError *ThumbnailError `json:"error"`
 }
 
-func (dbx *apiImpl) GetThumbnail(arg *ThumbnailArg) (res *FileMetadata, content io.ReadCloser, err error) {
+func (dbx *apiImpl) GetThumbnailContext(ctx context.Context, arg *ThumbnailArg) (res *FileMetadata, content io.ReadCloser, err error) {
 	req := dropbox.Request{
 		Host:         "content",
 		Namespace:    "files",
@@ -1534,11 +1709,11 @@ func (dbx *apiImpl) GetThumbnail(arg *ThumbnailArg) (res *FileMetadata, content 
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr GetThumbnailAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -1553,13 +1728,17 @@ func (dbx *apiImpl) GetThumbnail(arg *ThumbnailArg) (res *FileMetadata, content 
 	return
 }
 
-//GetThumbnailV2APIError is an error-wrapper for the get_thumbnail_v2 route
+func (dbx *apiImpl) GetThumbnail(arg *ThumbnailArg) (res *FileMetadata, content io.ReadCloser, err error) {
+	return dbx.GetThumbnailContext(context.Background(), arg)
+}
+
+// GetThumbnailV2APIError is an error-wrapper for the get_thumbnail_v2 route
 type GetThumbnailV2APIError struct {
 	dropbox.APIError
 	EndpointError *ThumbnailV2Error `json:"error"`
 }
 
-func (dbx *apiImpl) GetThumbnailV2(arg *ThumbnailV2Arg) (res *PreviewResult, content io.ReadCloser, err error) {
+func (dbx *apiImpl) GetThumbnailV2Context(ctx context.Context, arg *ThumbnailV2Arg) (res *PreviewResult, content io.ReadCloser, err error) {
 	req := dropbox.Request{
 		Host:         "content",
 		Namespace:    "files",
@@ -1572,11 +1751,11 @@ func (dbx *apiImpl) GetThumbnailV2(arg *ThumbnailV2Arg) (res *PreviewResult, con
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr GetThumbnailV2APIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -1591,13 +1770,17 @@ func (dbx *apiImpl) GetThumbnailV2(arg *ThumbnailV2Arg) (res *PreviewResult, con
 	return
 }
 
-//GetThumbnailBatchAPIError is an error-wrapper for the get_thumbnail_batch route
+func (dbx *apiImpl) GetThumbnailV2(arg *ThumbnailV2Arg) (res *PreviewResult, content io.ReadCloser, err error) {
+	return dbx.GetThumbnailV2Context(context.Background(), arg)
+}
+
+// GetThumbnailBatchAPIError is an error-wrapper for the get_thumbnail_batch route
 type GetThumbnailBatchAPIError struct {
 	dropbox.APIError
 	EndpointError *GetThumbnailBatchError `json:"error"`
 }
 
-func (dbx *apiImpl) GetThumbnailBatch(arg *GetThumbnailBatchArg) (res *GetThumbnailBatchResult, err error) {
+func (dbx *apiImpl) GetThumbnailBatchContext(ctx context.Context, arg *GetThumbnailBatchArg) (res *GetThumbnailBatchResult, err error) {
 	req := dropbox.Request{
 		Host:         "content",
 		Namespace:    "files",
@@ -1610,11 +1793,11 @@ func (dbx *apiImpl) GetThumbnailBatch(arg *GetThumbnailBatchArg) (res *GetThumbn
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr GetThumbnailBatchAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -1629,13 +1812,17 @@ func (dbx *apiImpl) GetThumbnailBatch(arg *GetThumbnailBatchArg) (res *GetThumbn
 	return
 }
 
-//ListFolderAPIError is an error-wrapper for the list_folder route
+func (dbx *apiImpl) GetThumbnailBatch(arg *GetThumbnailBatchArg) (res *GetThumbnailBatchResult, err error) {
+	return dbx.GetThumbnailBatchContext(context.Background(), arg)
+}
+
+// ListFolderAPIError is an error-wrapper for the list_folder route
 type ListFolderAPIError struct {
 	dropbox.APIError
 	EndpointError *ListFolderError `json:"error"`
 }
 
-func (dbx *apiImpl) ListFolder(arg *ListFolderArg) (res *ListFolderResult, err error) {
+func (dbx *apiImpl) ListFolderContext(ctx context.Context, arg *ListFolderArg) (res *ListFolderResult, err error) {
 	req := dropbox.Request{
 		Host:         "api",
 		Namespace:    "files",
@@ -1648,11 +1835,11 @@ func (dbx *apiImpl) ListFolder(arg *ListFolderArg) (res *ListFolderResult, err e
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr ListFolderAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -1667,13 +1854,17 @@ func (dbx *apiImpl) ListFolder(arg *ListFolderArg) (res *ListFolderResult, err e
 	return
 }
 
-//ListFolderContinueAPIError is an error-wrapper for the list_folder/continue route
+func (dbx *apiImpl) ListFolder(arg *ListFolderArg) (res *ListFolderResult, err error) {
+	return dbx.ListFolderContext(context.Background(), arg)
+}
+
+// ListFolderContinueAPIError is an error-wrapper for the list_folder/continue route
 type ListFolderContinueAPIError struct {
 	dropbox.APIError
 	EndpointError *ListFolderContinueError `json:"error"`
 }
 
-func (dbx *apiImpl) ListFolderContinue(arg *ListFolderContinueArg) (res *ListFolderResult, err error) {
+func (dbx *apiImpl) ListFolderContinueContext(ctx context.Context, arg *ListFolderContinueArg) (res *ListFolderResult, err error) {
 	req := dropbox.Request{
 		Host:         "api",
 		Namespace:    "files",
@@ -1686,11 +1877,11 @@ func (dbx *apiImpl) ListFolderContinue(arg *ListFolderContinueArg) (res *ListFol
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr ListFolderContinueAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -1705,13 +1896,17 @@ func (dbx *apiImpl) ListFolderContinue(arg *ListFolderContinueArg) (res *ListFol
 	return
 }
 
-//ListFolderGetLatestCursorAPIError is an error-wrapper for the list_folder/get_latest_cursor route
+func (dbx *apiImpl) ListFolderContinue(arg *ListFolderContinueArg) (res *ListFolderResult, err error) {
+	return dbx.ListFolderContinueContext(context.Background(), arg)
+}
+
+// ListFolderGetLatestCursorAPIError is an error-wrapper for the list_folder/get_latest_cursor route
 type ListFolderGetLatestCursorAPIError struct {
 	dropbox.APIError
 	EndpointError *ListFolderError `json:"error"`
 }
 
-func (dbx *apiImpl) ListFolderGetLatestCursor(arg *ListFolderArg) (res *ListFolderGetLatestCursorResult, err error) {
+func (dbx *apiImpl) ListFolderGetLatestCursorContext(ctx context.Context, arg *ListFolderArg) (res *ListFolderGetLatestCursorResult, err error) {
 	req := dropbox.Request{
 		Host:         "api",
 		Namespace:    "files",
@@ -1724,11 +1919,11 @@ func (dbx *apiImpl) ListFolderGetLatestCursor(arg *ListFolderArg) (res *ListFold
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr ListFolderGetLatestCursorAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -1743,13 +1938,17 @@ func (dbx *apiImpl) ListFolderGetLatestCursor(arg *ListFolderArg) (res *ListFold
 	return
 }
 
-//ListFolderLongpollAPIError is an error-wrapper for the list_folder/longpoll route
+func (dbx *apiImpl) ListFolderGetLatestCursor(arg *ListFolderArg) (res *ListFolderGetLatestCursorResult, err error) {
+	return dbx.ListFolderGetLatestCursorContext(context.Background(), arg)
+}
+
+// ListFolderLongpollAPIError is an error-wrapper for the list_folder/longpoll route
 type ListFolderLongpollAPIError struct {
 	dropbox.APIError
 	EndpointError *ListFolderLongpollError `json:"error"`
 }
 
-func (dbx *apiImpl) ListFolderLongpoll(arg *ListFolderLongpollArg) (res *ListFolderLongpollResult, err error) {
+func (dbx *apiImpl) ListFolderLongpollContext(ctx context.Context, arg *ListFolderLongpollArg) (res *ListFolderLongpollResult, err error) {
 	req := dropbox.Request{
 		Host:         "notify",
 		Namespace:    "files",
@@ -1762,11 +1961,11 @@ func (dbx *apiImpl) ListFolderLongpoll(arg *ListFolderLongpollArg) (res *ListFol
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr ListFolderLongpollAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -1781,13 +1980,17 @@ func (dbx *apiImpl) ListFolderLongpoll(arg *ListFolderLongpollArg) (res *ListFol
 	return
 }
 
-//ListRevisionsAPIError is an error-wrapper for the list_revisions route
+func (dbx *apiImpl) ListFolderLongpoll(arg *ListFolderLongpollArg) (res *ListFolderLongpollResult, err error) {
+	return dbx.ListFolderLongpollContext(context.Background(), arg)
+}
+
+// ListRevisionsAPIError is an error-wrapper for the list_revisions route
 type ListRevisionsAPIError struct {
 	dropbox.APIError
 	EndpointError *ListRevisionsError `json:"error"`
 }
 
-func (dbx *apiImpl) ListRevisions(arg *ListRevisionsArg) (res *ListRevisionsResult, err error) {
+func (dbx *apiImpl) ListRevisionsContext(ctx context.Context, arg *ListRevisionsArg) (res *ListRevisionsResult, err error) {
 	req := dropbox.Request{
 		Host:         "api",
 		Namespace:    "files",
@@ -1800,11 +2003,11 @@ func (dbx *apiImpl) ListRevisions(arg *ListRevisionsArg) (res *ListRevisionsResu
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr ListRevisionsAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -1819,13 +2022,17 @@ func (dbx *apiImpl) ListRevisions(arg *ListRevisionsArg) (res *ListRevisionsResu
 	return
 }
 
-//LockFileBatchAPIError is an error-wrapper for the lock_file_batch route
+func (dbx *apiImpl) ListRevisions(arg *ListRevisionsArg) (res *ListRevisionsResult, err error) {
+	return dbx.ListRevisionsContext(context.Background(), arg)
+}
+
+// LockFileBatchAPIError is an error-wrapper for the lock_file_batch route
 type LockFileBatchAPIError struct {
 	dropbox.APIError
 	EndpointError *LockFileError `json:"error"`
 }
 
-func (dbx *apiImpl) LockFileBatch(arg *LockFileBatchArg) (res *LockFileBatchResult, err error) {
+func (dbx *apiImpl) LockFileBatchContext(ctx context.Context, arg *LockFileBatchArg) (res *LockFileBatchResult, err error) {
 	req := dropbox.Request{
 		Host:         "api",
 		Namespace:    "files",
@@ -1838,11 +2045,11 @@ func (dbx *apiImpl) LockFileBatch(arg *LockFileBatchArg) (res *LockFileBatchResu
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr LockFileBatchAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -1857,51 +2064,17 @@ func (dbx *apiImpl) LockFileBatch(arg *LockFileBatchArg) (res *LockFileBatchResu
 	return
 }
 
-//MoveV2APIError is an error-wrapper for the move_v2 route
-type MoveV2APIError struct {
-	dropbox.APIError
-	EndpointError *RelocationError `json:"error"`
+func (dbx *apiImpl) LockFileBatch(arg *LockFileBatchArg) (res *LockFileBatchResult, err error) {
+	return dbx.LockFileBatchContext(context.Background(), arg)
 }
 
-func (dbx *apiImpl) MoveV2(arg *RelocationArg) (res *RelocationResult, err error) {
-	req := dropbox.Request{
-		Host:         "api",
-		Namespace:    "files",
-		Route:        "move_v2",
-		Auth:         "user",
-		Style:        "rpc",
-		Arg:          arg,
-		ExtraHeaders: nil,
-	}
-
-	var resp []byte
-	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
-	if err != nil {
-		var appErr MoveV2APIError
-		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
-			err = appErr
-		}
-		return
-	}
-
-	err = json.Unmarshal(resp, &res)
-	if err != nil {
-		return
-	}
-
-	_ = respBody
-	return
-}
-
-//MoveAPIError is an error-wrapper for the move route
+// MoveAPIError is an error-wrapper for the move route
 type MoveAPIError struct {
 	dropbox.APIError
 	EndpointError *RelocationError `json:"error"`
 }
 
-func (dbx *apiImpl) Move(arg *RelocationArg) (res IsMetadata, err error) {
+func (dbx *apiImpl) MoveContext(ctx context.Context, arg *RelocationArg) (res IsMetadata, err error) {
 	log.Printf("WARNING: API `Move` is deprecated")
 	log.Printf("Use API `MoveV2` instead")
 
@@ -1917,11 +2090,11 @@ func (dbx *apiImpl) Move(arg *RelocationArg) (res IsMetadata, err error) {
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr MoveAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -1947,17 +2120,21 @@ func (dbx *apiImpl) Move(arg *RelocationArg) (res IsMetadata, err error) {
 	return
 }
 
-//MoveBatchV2APIError is an error-wrapper for the move_batch_v2 route
-type MoveBatchV2APIError struct {
-	dropbox.APIError
-	EndpointError struct{} `json:"error"`
+func (dbx *apiImpl) Move(arg *RelocationArg) (res IsMetadata, err error) {
+	return dbx.MoveContext(context.Background(), arg)
 }
 
-func (dbx *apiImpl) MoveBatchV2(arg *MoveBatchArg) (res *RelocationBatchV2Launch, err error) {
+// MoveV2APIError is an error-wrapper for the move_v2 route
+type MoveV2APIError struct {
+	dropbox.APIError
+	EndpointError *RelocationError `json:"error"`
+}
+
+func (dbx *apiImpl) MoveV2Context(ctx context.Context, arg *RelocationArg) (res *RelocationResult, err error) {
 	req := dropbox.Request{
 		Host:         "api",
 		Namespace:    "files",
-		Route:        "move_batch_v2",
+		Route:        "move_v2",
 		Auth:         "user",
 		Style:        "rpc",
 		Arg:          arg,
@@ -1966,11 +2143,11 @@ func (dbx *apiImpl) MoveBatchV2(arg *MoveBatchArg) (res *RelocationBatchV2Launch
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
-		var appErr MoveBatchV2APIError
+		var appErr MoveV2APIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -1985,13 +2162,17 @@ func (dbx *apiImpl) MoveBatchV2(arg *MoveBatchArg) (res *RelocationBatchV2Launch
 	return
 }
 
-//MoveBatchAPIError is an error-wrapper for the move_batch route
+func (dbx *apiImpl) MoveV2(arg *RelocationArg) (res *RelocationResult, err error) {
+	return dbx.MoveV2Context(context.Background(), arg)
+}
+
+// MoveBatchAPIError is an error-wrapper for the move_batch route
 type MoveBatchAPIError struct {
 	dropbox.APIError
 	EndpointError struct{} `json:"error"`
 }
 
-func (dbx *apiImpl) MoveBatch(arg *RelocationBatchArg) (res *RelocationBatchLaunch, err error) {
+func (dbx *apiImpl) MoveBatchContext(ctx context.Context, arg *RelocationBatchArg) (res *RelocationBatchLaunch, err error) {
 	log.Printf("WARNING: API `MoveBatch` is deprecated")
 	log.Printf("Use API `MoveBatchV2` instead")
 
@@ -2007,11 +2188,11 @@ func (dbx *apiImpl) MoveBatch(arg *RelocationBatchArg) (res *RelocationBatchLaun
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr MoveBatchAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -2026,17 +2207,21 @@ func (dbx *apiImpl) MoveBatch(arg *RelocationBatchArg) (res *RelocationBatchLaun
 	return
 }
 
-//MoveBatchCheckV2APIError is an error-wrapper for the move_batch/check_v2 route
-type MoveBatchCheckV2APIError struct {
-	dropbox.APIError
-	EndpointError *async.PollError `json:"error"`
+func (dbx *apiImpl) MoveBatch(arg *RelocationBatchArg) (res *RelocationBatchLaunch, err error) {
+	return dbx.MoveBatchContext(context.Background(), arg)
 }
 
-func (dbx *apiImpl) MoveBatchCheckV2(arg *async.PollArg) (res *RelocationBatchV2JobStatus, err error) {
+// MoveBatchV2APIError is an error-wrapper for the move_batch_v2 route
+type MoveBatchV2APIError struct {
+	dropbox.APIError
+	EndpointError struct{} `json:"error"`
+}
+
+func (dbx *apiImpl) MoveBatchV2Context(ctx context.Context, arg *MoveBatchArg) (res *RelocationBatchV2Launch, err error) {
 	req := dropbox.Request{
 		Host:         "api",
 		Namespace:    "files",
-		Route:        "move_batch/check_v2",
+		Route:        "move_batch_v2",
 		Auth:         "user",
 		Style:        "rpc",
 		Arg:          arg,
@@ -2045,11 +2230,11 @@ func (dbx *apiImpl) MoveBatchCheckV2(arg *async.PollArg) (res *RelocationBatchV2
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
-		var appErr MoveBatchCheckV2APIError
+		var appErr MoveBatchV2APIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -2064,13 +2249,17 @@ func (dbx *apiImpl) MoveBatchCheckV2(arg *async.PollArg) (res *RelocationBatchV2
 	return
 }
 
-//MoveBatchCheckAPIError is an error-wrapper for the move_batch/check route
+func (dbx *apiImpl) MoveBatchV2(arg *MoveBatchArg) (res *RelocationBatchV2Launch, err error) {
+	return dbx.MoveBatchV2Context(context.Background(), arg)
+}
+
+// MoveBatchCheckAPIError is an error-wrapper for the move_batch/check route
 type MoveBatchCheckAPIError struct {
 	dropbox.APIError
 	EndpointError *async.PollError `json:"error"`
 }
 
-func (dbx *apiImpl) MoveBatchCheck(arg *async.PollArg) (res *RelocationBatchJobStatus, err error) {
+func (dbx *apiImpl) MoveBatchCheckContext(ctx context.Context, arg *async.PollArg) (res *RelocationBatchJobStatus, err error) {
 	log.Printf("WARNING: API `MoveBatchCheck` is deprecated")
 	log.Printf("Use API `MoveBatchCheckV2` instead")
 
@@ -2086,11 +2275,11 @@ func (dbx *apiImpl) MoveBatchCheck(arg *async.PollArg) (res *RelocationBatchJobS
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr MoveBatchCheckAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -2105,13 +2294,59 @@ func (dbx *apiImpl) MoveBatchCheck(arg *async.PollArg) (res *RelocationBatchJobS
 	return
 }
 
-//PaperCreateAPIError is an error-wrapper for the paper/create route
+func (dbx *apiImpl) MoveBatchCheck(arg *async.PollArg) (res *RelocationBatchJobStatus, err error) {
+	return dbx.MoveBatchCheckContext(context.Background(), arg)
+}
+
+// MoveBatchCheckV2APIError is an error-wrapper for the move_batch/check_v2 route
+type MoveBatchCheckV2APIError struct {
+	dropbox.APIError
+	EndpointError *async.PollError `json:"error"`
+}
+
+func (dbx *apiImpl) MoveBatchCheckV2Context(ctx context.Context, arg *async.PollArg) (res *RelocationBatchV2JobStatus, err error) {
+	req := dropbox.Request{
+		Host:         "api",
+		Namespace:    "files",
+		Route:        "move_batch/check_v2",
+		Auth:         "user",
+		Style:        "rpc",
+		Arg:          arg,
+		ExtraHeaders: nil,
+	}
+
+	var resp []byte
+	var respBody io.ReadCloser
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
+	if err != nil {
+		var appErr MoveBatchCheckV2APIError
+		err = auth.ParseError(err, &appErr)
+		if errors.Is(err, &appErr) {
+			err = appErr
+		}
+		return
+	}
+
+	err = json.Unmarshal(resp, &res)
+	if err != nil {
+		return
+	}
+
+	_ = respBody
+	return
+}
+
+func (dbx *apiImpl) MoveBatchCheckV2(arg *async.PollArg) (res *RelocationBatchV2JobStatus, err error) {
+	return dbx.MoveBatchCheckV2Context(context.Background(), arg)
+}
+
+// PaperCreateAPIError is an error-wrapper for the paper/create route
 type PaperCreateAPIError struct {
 	dropbox.APIError
 	EndpointError *PaperCreateError `json:"error"`
 }
 
-func (dbx *apiImpl) PaperCreate(arg *PaperCreateArg, content io.Reader) (res *PaperCreateResult, err error) {
+func (dbx *apiImpl) PaperCreateContext(ctx context.Context, arg *PaperCreateArg, content io.Reader) (res *PaperCreateResult, err error) {
 	req := dropbox.Request{
 		Host:         "api",
 		Namespace:    "files",
@@ -2124,11 +2359,11 @@ func (dbx *apiImpl) PaperCreate(arg *PaperCreateArg, content io.Reader) (res *Pa
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, content)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, content)
 	if err != nil {
 		var appErr PaperCreateAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -2143,13 +2378,17 @@ func (dbx *apiImpl) PaperCreate(arg *PaperCreateArg, content io.Reader) (res *Pa
 	return
 }
 
-//PaperUpdateAPIError is an error-wrapper for the paper/update route
+func (dbx *apiImpl) PaperCreate(arg *PaperCreateArg, content io.Reader) (res *PaperCreateResult, err error) {
+	return dbx.PaperCreateContext(context.Background(), arg, content)
+}
+
+// PaperUpdateAPIError is an error-wrapper for the paper/update route
 type PaperUpdateAPIError struct {
 	dropbox.APIError
 	EndpointError *PaperUpdateError `json:"error"`
 }
 
-func (dbx *apiImpl) PaperUpdate(arg *PaperUpdateArg, content io.Reader) (res *PaperUpdateResult, err error) {
+func (dbx *apiImpl) PaperUpdateContext(ctx context.Context, arg *PaperUpdateArg, content io.Reader) (res *PaperUpdateResult, err error) {
 	req := dropbox.Request{
 		Host:         "api",
 		Namespace:    "files",
@@ -2162,11 +2401,11 @@ func (dbx *apiImpl) PaperUpdate(arg *PaperUpdateArg, content io.Reader) (res *Pa
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, content)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, content)
 	if err != nil {
 		var appErr PaperUpdateAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -2181,13 +2420,17 @@ func (dbx *apiImpl) PaperUpdate(arg *PaperUpdateArg, content io.Reader) (res *Pa
 	return
 }
 
-//PermanentlyDeleteAPIError is an error-wrapper for the permanently_delete route
+func (dbx *apiImpl) PaperUpdate(arg *PaperUpdateArg, content io.Reader) (res *PaperUpdateResult, err error) {
+	return dbx.PaperUpdateContext(context.Background(), arg, content)
+}
+
+// PermanentlyDeleteAPIError is an error-wrapper for the permanently_delete route
 type PermanentlyDeleteAPIError struct {
 	dropbox.APIError
 	EndpointError *DeleteError `json:"error"`
 }
 
-func (dbx *apiImpl) PermanentlyDelete(arg *DeleteArg) (err error) {
+func (dbx *apiImpl) PermanentlyDeleteContext(ctx context.Context, arg *DeleteArg) (err error) {
 	req := dropbox.Request{
 		Host:         "api",
 		Namespace:    "files",
@@ -2200,11 +2443,11 @@ func (dbx *apiImpl) PermanentlyDelete(arg *DeleteArg) (err error) {
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr PermanentlyDeleteAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -2215,13 +2458,17 @@ func (dbx *apiImpl) PermanentlyDelete(arg *DeleteArg) (err error) {
 	return
 }
 
-//PropertiesAddAPIError is an error-wrapper for the properties/add route
+func (dbx *apiImpl) PermanentlyDelete(arg *DeleteArg) (err error) {
+	return dbx.PermanentlyDeleteContext(context.Background(), arg)
+}
+
+// PropertiesAddAPIError is an error-wrapper for the properties/add route
 type PropertiesAddAPIError struct {
 	dropbox.APIError
 	EndpointError *file_properties.AddPropertiesError `json:"error"`
 }
 
-func (dbx *apiImpl) PropertiesAdd(arg *file_properties.AddPropertiesArg) (err error) {
+func (dbx *apiImpl) PropertiesAddContext(ctx context.Context, arg *file_properties.AddPropertiesArg) (err error) {
 	log.Printf("WARNING: API `PropertiesAdd` is deprecated")
 
 	req := dropbox.Request{
@@ -2236,11 +2483,11 @@ func (dbx *apiImpl) PropertiesAdd(arg *file_properties.AddPropertiesArg) (err er
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr PropertiesAddAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -2251,13 +2498,17 @@ func (dbx *apiImpl) PropertiesAdd(arg *file_properties.AddPropertiesArg) (err er
 	return
 }
 
-//PropertiesOverwriteAPIError is an error-wrapper for the properties/overwrite route
+func (dbx *apiImpl) PropertiesAdd(arg *file_properties.AddPropertiesArg) (err error) {
+	return dbx.PropertiesAddContext(context.Background(), arg)
+}
+
+// PropertiesOverwriteAPIError is an error-wrapper for the properties/overwrite route
 type PropertiesOverwriteAPIError struct {
 	dropbox.APIError
 	EndpointError *file_properties.InvalidPropertyGroupError `json:"error"`
 }
 
-func (dbx *apiImpl) PropertiesOverwrite(arg *file_properties.OverwritePropertyGroupArg) (err error) {
+func (dbx *apiImpl) PropertiesOverwriteContext(ctx context.Context, arg *file_properties.OverwritePropertyGroupArg) (err error) {
 	log.Printf("WARNING: API `PropertiesOverwrite` is deprecated")
 
 	req := dropbox.Request{
@@ -2272,11 +2523,11 @@ func (dbx *apiImpl) PropertiesOverwrite(arg *file_properties.OverwritePropertyGr
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr PropertiesOverwriteAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -2287,13 +2538,17 @@ func (dbx *apiImpl) PropertiesOverwrite(arg *file_properties.OverwritePropertyGr
 	return
 }
 
-//PropertiesRemoveAPIError is an error-wrapper for the properties/remove route
+func (dbx *apiImpl) PropertiesOverwrite(arg *file_properties.OverwritePropertyGroupArg) (err error) {
+	return dbx.PropertiesOverwriteContext(context.Background(), arg)
+}
+
+// PropertiesRemoveAPIError is an error-wrapper for the properties/remove route
 type PropertiesRemoveAPIError struct {
 	dropbox.APIError
 	EndpointError *file_properties.RemovePropertiesError `json:"error"`
 }
 
-func (dbx *apiImpl) PropertiesRemove(arg *file_properties.RemovePropertiesArg) (err error) {
+func (dbx *apiImpl) PropertiesRemoveContext(ctx context.Context, arg *file_properties.RemovePropertiesArg) (err error) {
 	log.Printf("WARNING: API `PropertiesRemove` is deprecated")
 
 	req := dropbox.Request{
@@ -2308,11 +2563,11 @@ func (dbx *apiImpl) PropertiesRemove(arg *file_properties.RemovePropertiesArg) (
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr PropertiesRemoveAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -2323,13 +2578,17 @@ func (dbx *apiImpl) PropertiesRemove(arg *file_properties.RemovePropertiesArg) (
 	return
 }
 
-//PropertiesTemplateGetAPIError is an error-wrapper for the properties/template/get route
+func (dbx *apiImpl) PropertiesRemove(arg *file_properties.RemovePropertiesArg) (err error) {
+	return dbx.PropertiesRemoveContext(context.Background(), arg)
+}
+
+// PropertiesTemplateGetAPIError is an error-wrapper for the properties/template/get route
 type PropertiesTemplateGetAPIError struct {
 	dropbox.APIError
 	EndpointError *file_properties.TemplateError `json:"error"`
 }
 
-func (dbx *apiImpl) PropertiesTemplateGet(arg *file_properties.GetTemplateArg) (res *file_properties.GetTemplateResult, err error) {
+func (dbx *apiImpl) PropertiesTemplateGetContext(ctx context.Context, arg *file_properties.GetTemplateArg) (res *file_properties.GetTemplateResult, err error) {
 	log.Printf("WARNING: API `PropertiesTemplateGet` is deprecated")
 
 	req := dropbox.Request{
@@ -2344,11 +2603,11 @@ func (dbx *apiImpl) PropertiesTemplateGet(arg *file_properties.GetTemplateArg) (
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr PropertiesTemplateGetAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -2363,13 +2622,17 @@ func (dbx *apiImpl) PropertiesTemplateGet(arg *file_properties.GetTemplateArg) (
 	return
 }
 
-//PropertiesTemplateListAPIError is an error-wrapper for the properties/template/list route
+func (dbx *apiImpl) PropertiesTemplateGet(arg *file_properties.GetTemplateArg) (res *file_properties.GetTemplateResult, err error) {
+	return dbx.PropertiesTemplateGetContext(context.Background(), arg)
+}
+
+// PropertiesTemplateListAPIError is an error-wrapper for the properties/template/list route
 type PropertiesTemplateListAPIError struct {
 	dropbox.APIError
 	EndpointError *file_properties.TemplateError `json:"error"`
 }
 
-func (dbx *apiImpl) PropertiesTemplateList() (res *file_properties.ListTemplateResult, err error) {
+func (dbx *apiImpl) PropertiesTemplateListContext(ctx context.Context) (res *file_properties.ListTemplateResult, err error) {
 	log.Printf("WARNING: API `PropertiesTemplateList` is deprecated")
 
 	req := dropbox.Request{
@@ -2384,11 +2647,11 @@ func (dbx *apiImpl) PropertiesTemplateList() (res *file_properties.ListTemplateR
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr PropertiesTemplateListAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -2403,13 +2666,17 @@ func (dbx *apiImpl) PropertiesTemplateList() (res *file_properties.ListTemplateR
 	return
 }
 
-//PropertiesUpdateAPIError is an error-wrapper for the properties/update route
+func (dbx *apiImpl) PropertiesTemplateList() (res *file_properties.ListTemplateResult, err error) {
+	return dbx.PropertiesTemplateListContext(context.Background())
+}
+
+// PropertiesUpdateAPIError is an error-wrapper for the properties/update route
 type PropertiesUpdateAPIError struct {
 	dropbox.APIError
 	EndpointError *file_properties.UpdatePropertiesError `json:"error"`
 }
 
-func (dbx *apiImpl) PropertiesUpdate(arg *file_properties.UpdatePropertiesArg) (err error) {
+func (dbx *apiImpl) PropertiesUpdateContext(ctx context.Context, arg *file_properties.UpdatePropertiesArg) (err error) {
 	log.Printf("WARNING: API `PropertiesUpdate` is deprecated")
 
 	req := dropbox.Request{
@@ -2424,11 +2691,11 @@ func (dbx *apiImpl) PropertiesUpdate(arg *file_properties.UpdatePropertiesArg) (
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr PropertiesUpdateAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -2439,13 +2706,17 @@ func (dbx *apiImpl) PropertiesUpdate(arg *file_properties.UpdatePropertiesArg) (
 	return
 }
 
-//RestoreAPIError is an error-wrapper for the restore route
+func (dbx *apiImpl) PropertiesUpdate(arg *file_properties.UpdatePropertiesArg) (err error) {
+	return dbx.PropertiesUpdateContext(context.Background(), arg)
+}
+
+// RestoreAPIError is an error-wrapper for the restore route
 type RestoreAPIError struct {
 	dropbox.APIError
 	EndpointError *RestoreError `json:"error"`
 }
 
-func (dbx *apiImpl) Restore(arg *RestoreArg) (res *FileMetadata, err error) {
+func (dbx *apiImpl) RestoreContext(ctx context.Context, arg *RestoreArg) (res *FileMetadata, err error) {
 	req := dropbox.Request{
 		Host:         "api",
 		Namespace:    "files",
@@ -2458,11 +2729,11 @@ func (dbx *apiImpl) Restore(arg *RestoreArg) (res *FileMetadata, err error) {
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr RestoreAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -2477,13 +2748,17 @@ func (dbx *apiImpl) Restore(arg *RestoreArg) (res *FileMetadata, err error) {
 	return
 }
 
-//SaveUrlAPIError is an error-wrapper for the save_url route
+func (dbx *apiImpl) Restore(arg *RestoreArg) (res *FileMetadata, err error) {
+	return dbx.RestoreContext(context.Background(), arg)
+}
+
+// SaveUrlAPIError is an error-wrapper for the save_url route
 type SaveUrlAPIError struct {
 	dropbox.APIError
 	EndpointError *SaveUrlError `json:"error"`
 }
 
-func (dbx *apiImpl) SaveUrl(arg *SaveUrlArg) (res *SaveUrlResult, err error) {
+func (dbx *apiImpl) SaveUrlContext(ctx context.Context, arg *SaveUrlArg) (res *SaveUrlResult, err error) {
 	req := dropbox.Request{
 		Host:         "api",
 		Namespace:    "files",
@@ -2496,11 +2771,11 @@ func (dbx *apiImpl) SaveUrl(arg *SaveUrlArg) (res *SaveUrlResult, err error) {
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr SaveUrlAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -2515,13 +2790,17 @@ func (dbx *apiImpl) SaveUrl(arg *SaveUrlArg) (res *SaveUrlResult, err error) {
 	return
 }
 
-//SaveUrlCheckJobStatusAPIError is an error-wrapper for the save_url/check_job_status route
+func (dbx *apiImpl) SaveUrl(arg *SaveUrlArg) (res *SaveUrlResult, err error) {
+	return dbx.SaveUrlContext(context.Background(), arg)
+}
+
+// SaveUrlCheckJobStatusAPIError is an error-wrapper for the save_url/check_job_status route
 type SaveUrlCheckJobStatusAPIError struct {
 	dropbox.APIError
 	EndpointError *async.PollError `json:"error"`
 }
 
-func (dbx *apiImpl) SaveUrlCheckJobStatus(arg *async.PollArg) (res *SaveUrlJobStatus, err error) {
+func (dbx *apiImpl) SaveUrlCheckJobStatusContext(ctx context.Context, arg *async.PollArg) (res *SaveUrlJobStatus, err error) {
 	req := dropbox.Request{
 		Host:         "api",
 		Namespace:    "files",
@@ -2534,11 +2813,11 @@ func (dbx *apiImpl) SaveUrlCheckJobStatus(arg *async.PollArg) (res *SaveUrlJobSt
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr SaveUrlCheckJobStatusAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -2553,13 +2832,17 @@ func (dbx *apiImpl) SaveUrlCheckJobStatus(arg *async.PollArg) (res *SaveUrlJobSt
 	return
 }
 
-//SearchAPIError is an error-wrapper for the search route
+func (dbx *apiImpl) SaveUrlCheckJobStatus(arg *async.PollArg) (res *SaveUrlJobStatus, err error) {
+	return dbx.SaveUrlCheckJobStatusContext(context.Background(), arg)
+}
+
+// SearchAPIError is an error-wrapper for the search route
 type SearchAPIError struct {
 	dropbox.APIError
 	EndpointError *SearchError `json:"error"`
 }
 
-func (dbx *apiImpl) Search(arg *SearchArg) (res *SearchResult, err error) {
+func (dbx *apiImpl) SearchContext(ctx context.Context, arg *SearchArg) (res *SearchResult, err error) {
 	log.Printf("WARNING: API `Search` is deprecated")
 	log.Printf("Use API `SearchV2` instead")
 
@@ -2575,11 +2858,11 @@ func (dbx *apiImpl) Search(arg *SearchArg) (res *SearchResult, err error) {
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr SearchAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -2594,13 +2877,17 @@ func (dbx *apiImpl) Search(arg *SearchArg) (res *SearchResult, err error) {
 	return
 }
 
-//SearchV2APIError is an error-wrapper for the search_v2 route
+func (dbx *apiImpl) Search(arg *SearchArg) (res *SearchResult, err error) {
+	return dbx.SearchContext(context.Background(), arg)
+}
+
+// SearchV2APIError is an error-wrapper for the search_v2 route
 type SearchV2APIError struct {
 	dropbox.APIError
 	EndpointError *SearchError `json:"error"`
 }
 
-func (dbx *apiImpl) SearchV2(arg *SearchV2Arg) (res *SearchV2Result, err error) {
+func (dbx *apiImpl) SearchV2Context(ctx context.Context, arg *SearchV2Arg) (res *SearchV2Result, err error) {
 	req := dropbox.Request{
 		Host:         "api",
 		Namespace:    "files",
@@ -2613,11 +2900,11 @@ func (dbx *apiImpl) SearchV2(arg *SearchV2Arg) (res *SearchV2Result, err error) 
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr SearchV2APIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -2632,13 +2919,17 @@ func (dbx *apiImpl) SearchV2(arg *SearchV2Arg) (res *SearchV2Result, err error) 
 	return
 }
 
-//SearchContinueV2APIError is an error-wrapper for the search/continue_v2 route
+func (dbx *apiImpl) SearchV2(arg *SearchV2Arg) (res *SearchV2Result, err error) {
+	return dbx.SearchV2Context(context.Background(), arg)
+}
+
+// SearchContinueV2APIError is an error-wrapper for the search/continue_v2 route
 type SearchContinueV2APIError struct {
 	dropbox.APIError
 	EndpointError *SearchError `json:"error"`
 }
 
-func (dbx *apiImpl) SearchContinueV2(arg *SearchV2ContinueArg) (res *SearchV2Result, err error) {
+func (dbx *apiImpl) SearchContinueV2Context(ctx context.Context, arg *SearchV2ContinueArg) (res *SearchV2Result, err error) {
 	req := dropbox.Request{
 		Host:         "api",
 		Namespace:    "files",
@@ -2651,11 +2942,11 @@ func (dbx *apiImpl) SearchContinueV2(arg *SearchV2ContinueArg) (res *SearchV2Res
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr SearchContinueV2APIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -2670,13 +2961,17 @@ func (dbx *apiImpl) SearchContinueV2(arg *SearchV2ContinueArg) (res *SearchV2Res
 	return
 }
 
-//TagsAddAPIError is an error-wrapper for the tags/add route
+func (dbx *apiImpl) SearchContinueV2(arg *SearchV2ContinueArg) (res *SearchV2Result, err error) {
+	return dbx.SearchContinueV2Context(context.Background(), arg)
+}
+
+// TagsAddAPIError is an error-wrapper for the tags/add route
 type TagsAddAPIError struct {
 	dropbox.APIError
 	EndpointError *AddTagError `json:"error"`
 }
 
-func (dbx *apiImpl) TagsAdd(arg *AddTagArg) (err error) {
+func (dbx *apiImpl) TagsAddContext(ctx context.Context, arg *AddTagArg) (err error) {
 	req := dropbox.Request{
 		Host:         "api",
 		Namespace:    "files",
@@ -2689,11 +2984,11 @@ func (dbx *apiImpl) TagsAdd(arg *AddTagArg) (err error) {
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr TagsAddAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -2704,13 +2999,17 @@ func (dbx *apiImpl) TagsAdd(arg *AddTagArg) (err error) {
 	return
 }
 
-//TagsGetAPIError is an error-wrapper for the tags/get route
+func (dbx *apiImpl) TagsAdd(arg *AddTagArg) (err error) {
+	return dbx.TagsAddContext(context.Background(), arg)
+}
+
+// TagsGetAPIError is an error-wrapper for the tags/get route
 type TagsGetAPIError struct {
 	dropbox.APIError
 	EndpointError *BaseTagError `json:"error"`
 }
 
-func (dbx *apiImpl) TagsGet(arg *GetTagsArg) (res *GetTagsResult, err error) {
+func (dbx *apiImpl) TagsGetContext(ctx context.Context, arg *GetTagsArg) (res *GetTagsResult, err error) {
 	req := dropbox.Request{
 		Host:         "api",
 		Namespace:    "files",
@@ -2723,11 +3022,11 @@ func (dbx *apiImpl) TagsGet(arg *GetTagsArg) (res *GetTagsResult, err error) {
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr TagsGetAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -2742,13 +3041,17 @@ func (dbx *apiImpl) TagsGet(arg *GetTagsArg) (res *GetTagsResult, err error) {
 	return
 }
 
-//TagsRemoveAPIError is an error-wrapper for the tags/remove route
+func (dbx *apiImpl) TagsGet(arg *GetTagsArg) (res *GetTagsResult, err error) {
+	return dbx.TagsGetContext(context.Background(), arg)
+}
+
+// TagsRemoveAPIError is an error-wrapper for the tags/remove route
 type TagsRemoveAPIError struct {
 	dropbox.APIError
 	EndpointError *RemoveTagError `json:"error"`
 }
 
-func (dbx *apiImpl) TagsRemove(arg *RemoveTagArg) (err error) {
+func (dbx *apiImpl) TagsRemoveContext(ctx context.Context, arg *RemoveTagArg) (err error) {
 	req := dropbox.Request{
 		Host:         "api",
 		Namespace:    "files",
@@ -2761,11 +3064,11 @@ func (dbx *apiImpl) TagsRemove(arg *RemoveTagArg) (err error) {
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr TagsRemoveAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -2776,13 +3079,17 @@ func (dbx *apiImpl) TagsRemove(arg *RemoveTagArg) (err error) {
 	return
 }
 
-//UnlockFileBatchAPIError is an error-wrapper for the unlock_file_batch route
+func (dbx *apiImpl) TagsRemove(arg *RemoveTagArg) (err error) {
+	return dbx.TagsRemoveContext(context.Background(), arg)
+}
+
+// UnlockFileBatchAPIError is an error-wrapper for the unlock_file_batch route
 type UnlockFileBatchAPIError struct {
 	dropbox.APIError
 	EndpointError *LockFileError `json:"error"`
 }
 
-func (dbx *apiImpl) UnlockFileBatch(arg *UnlockFileBatchArg) (res *LockFileBatchResult, err error) {
+func (dbx *apiImpl) UnlockFileBatchContext(ctx context.Context, arg *UnlockFileBatchArg) (res *LockFileBatchResult, err error) {
 	req := dropbox.Request{
 		Host:         "api",
 		Namespace:    "files",
@@ -2795,11 +3102,11 @@ func (dbx *apiImpl) UnlockFileBatch(arg *UnlockFileBatchArg) (res *LockFileBatch
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr UnlockFileBatchAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -2814,13 +3121,17 @@ func (dbx *apiImpl) UnlockFileBatch(arg *UnlockFileBatchArg) (res *LockFileBatch
 	return
 }
 
-//UploadAPIError is an error-wrapper for the upload route
+func (dbx *apiImpl) UnlockFileBatch(arg *UnlockFileBatchArg) (res *LockFileBatchResult, err error) {
+	return dbx.UnlockFileBatchContext(context.Background(), arg)
+}
+
+// UploadAPIError is an error-wrapper for the upload route
 type UploadAPIError struct {
 	dropbox.APIError
 	EndpointError *UploadError `json:"error"`
 }
 
-func (dbx *apiImpl) Upload(arg *UploadArg, content io.Reader) (res *FileMetadata, err error) {
+func (dbx *apiImpl) UploadContext(ctx context.Context, arg *UploadArg, content io.Reader) (res *FileMetadata, err error) {
 	req := dropbox.Request{
 		Host:         "content",
 		Namespace:    "files",
@@ -2833,11 +3144,11 @@ func (dbx *apiImpl) Upload(arg *UploadArg, content io.Reader) (res *FileMetadata
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, content)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, content)
 	if err != nil {
 		var appErr UploadAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -2852,47 +3163,17 @@ func (dbx *apiImpl) Upload(arg *UploadArg, content io.Reader) (res *FileMetadata
 	return
 }
 
-//UploadSessionAppendV2APIError is an error-wrapper for the upload_session/append_v2 route
-type UploadSessionAppendV2APIError struct {
-	dropbox.APIError
-	EndpointError *UploadSessionAppendError `json:"error"`
+func (dbx *apiImpl) Upload(arg *UploadArg, content io.Reader) (res *FileMetadata, err error) {
+	return dbx.UploadContext(context.Background(), arg, content)
 }
 
-func (dbx *apiImpl) UploadSessionAppendV2(arg *UploadSessionAppendArg, content io.Reader) (err error) {
-	req := dropbox.Request{
-		Host:         "content",
-		Namespace:    "files",
-		Route:        "upload_session/append_v2",
-		Auth:         "user",
-		Style:        "upload",
-		Arg:          arg,
-		ExtraHeaders: nil,
-	}
-
-	var resp []byte
-	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, content)
-	if err != nil {
-		var appErr UploadSessionAppendV2APIError
-		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
-			err = appErr
-		}
-		return
-	}
-
-	_ = resp
-	_ = respBody
-	return
-}
-
-//UploadSessionAppendAPIError is an error-wrapper for the upload_session/append route
+// UploadSessionAppendAPIError is an error-wrapper for the upload_session/append route
 type UploadSessionAppendAPIError struct {
 	dropbox.APIError
 	EndpointError *UploadSessionAppendError `json:"error"`
 }
 
-func (dbx *apiImpl) UploadSessionAppend(arg *UploadSessionCursor, content io.Reader) (err error) {
+func (dbx *apiImpl) UploadSessionAppendContext(ctx context.Context, arg *UploadSessionCursor, content io.Reader) (err error) {
 	log.Printf("WARNING: API `UploadSessionAppend` is deprecated")
 	log.Printf("Use API `UploadSessionAppendV2` instead")
 
@@ -2908,11 +3189,11 @@ func (dbx *apiImpl) UploadSessionAppend(arg *UploadSessionCursor, content io.Rea
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, content)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, content)
 	if err != nil {
 		var appErr UploadSessionAppendAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -2923,13 +3204,55 @@ func (dbx *apiImpl) UploadSessionAppend(arg *UploadSessionCursor, content io.Rea
 	return
 }
 
-//UploadSessionFinishAPIError is an error-wrapper for the upload_session/finish route
+func (dbx *apiImpl) UploadSessionAppend(arg *UploadSessionCursor, content io.Reader) (err error) {
+	return dbx.UploadSessionAppendContext(context.Background(), arg, content)
+}
+
+// UploadSessionAppendV2APIError is an error-wrapper for the upload_session/append_v2 route
+type UploadSessionAppendV2APIError struct {
+	dropbox.APIError
+	EndpointError *UploadSessionAppendError `json:"error"`
+}
+
+func (dbx *apiImpl) UploadSessionAppendV2Context(ctx context.Context, arg *UploadSessionAppendArg, content io.Reader) (err error) {
+	req := dropbox.Request{
+		Host:         "content",
+		Namespace:    "files",
+		Route:        "upload_session/append_v2",
+		Auth:         "user",
+		Style:        "upload",
+		Arg:          arg,
+		ExtraHeaders: nil,
+	}
+
+	var resp []byte
+	var respBody io.ReadCloser
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, content)
+	if err != nil {
+		var appErr UploadSessionAppendV2APIError
+		err = auth.ParseError(err, &appErr)
+		if errors.Is(err, &appErr) {
+			err = appErr
+		}
+		return
+	}
+
+	_ = resp
+	_ = respBody
+	return
+}
+
+func (dbx *apiImpl) UploadSessionAppendV2(arg *UploadSessionAppendArg, content io.Reader) (err error) {
+	return dbx.UploadSessionAppendV2Context(context.Background(), arg, content)
+}
+
+// UploadSessionFinishAPIError is an error-wrapper for the upload_session/finish route
 type UploadSessionFinishAPIError struct {
 	dropbox.APIError
 	EndpointError *UploadSessionFinishError `json:"error"`
 }
 
-func (dbx *apiImpl) UploadSessionFinish(arg *UploadSessionFinishArg, content io.Reader) (res *FileMetadata, err error) {
+func (dbx *apiImpl) UploadSessionFinishContext(ctx context.Context, arg *UploadSessionFinishArg, content io.Reader) (res *FileMetadata, err error) {
 	req := dropbox.Request{
 		Host:         "content",
 		Namespace:    "files",
@@ -2942,11 +3265,11 @@ func (dbx *apiImpl) UploadSessionFinish(arg *UploadSessionFinishArg, content io.
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, content)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, content)
 	if err != nil {
 		var appErr UploadSessionFinishAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -2961,13 +3284,17 @@ func (dbx *apiImpl) UploadSessionFinish(arg *UploadSessionFinishArg, content io.
 	return
 }
 
-//UploadSessionFinishBatchAPIError is an error-wrapper for the upload_session/finish_batch route
+func (dbx *apiImpl) UploadSessionFinish(arg *UploadSessionFinishArg, content io.Reader) (res *FileMetadata, err error) {
+	return dbx.UploadSessionFinishContext(context.Background(), arg, content)
+}
+
+// UploadSessionFinishBatchAPIError is an error-wrapper for the upload_session/finish_batch route
 type UploadSessionFinishBatchAPIError struct {
 	dropbox.APIError
 	EndpointError struct{} `json:"error"`
 }
 
-func (dbx *apiImpl) UploadSessionFinishBatch(arg *UploadSessionFinishBatchArg) (res *UploadSessionFinishBatchLaunch, err error) {
+func (dbx *apiImpl) UploadSessionFinishBatchContext(ctx context.Context, arg *UploadSessionFinishBatchArg) (res *UploadSessionFinishBatchLaunch, err error) {
 	log.Printf("WARNING: API `UploadSessionFinishBatch` is deprecated")
 	log.Printf("Use API `UploadSessionFinishBatchV2` instead")
 
@@ -2983,11 +3310,11 @@ func (dbx *apiImpl) UploadSessionFinishBatch(arg *UploadSessionFinishBatchArg) (
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr UploadSessionFinishBatchAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -3002,13 +3329,17 @@ func (dbx *apiImpl) UploadSessionFinishBatch(arg *UploadSessionFinishBatchArg) (
 	return
 }
 
-//UploadSessionFinishBatchV2APIError is an error-wrapper for the upload_session/finish_batch_v2 route
+func (dbx *apiImpl) UploadSessionFinishBatch(arg *UploadSessionFinishBatchArg) (res *UploadSessionFinishBatchLaunch, err error) {
+	return dbx.UploadSessionFinishBatchContext(context.Background(), arg)
+}
+
+// UploadSessionFinishBatchV2APIError is an error-wrapper for the upload_session/finish_batch_v2 route
 type UploadSessionFinishBatchV2APIError struct {
 	dropbox.APIError
 	EndpointError struct{} `json:"error"`
 }
 
-func (dbx *apiImpl) UploadSessionFinishBatchV2(arg *UploadSessionFinishBatchArg) (res *UploadSessionFinishBatchResult, err error) {
+func (dbx *apiImpl) UploadSessionFinishBatchV2Context(ctx context.Context, arg *UploadSessionFinishBatchArg) (res *UploadSessionFinishBatchResult, err error) {
 	req := dropbox.Request{
 		Host:         "api",
 		Namespace:    "files",
@@ -3021,11 +3352,11 @@ func (dbx *apiImpl) UploadSessionFinishBatchV2(arg *UploadSessionFinishBatchArg)
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr UploadSessionFinishBatchV2APIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -3040,13 +3371,17 @@ func (dbx *apiImpl) UploadSessionFinishBatchV2(arg *UploadSessionFinishBatchArg)
 	return
 }
 
-//UploadSessionFinishBatchCheckAPIError is an error-wrapper for the upload_session/finish_batch/check route
+func (dbx *apiImpl) UploadSessionFinishBatchV2(arg *UploadSessionFinishBatchArg) (res *UploadSessionFinishBatchResult, err error) {
+	return dbx.UploadSessionFinishBatchV2Context(context.Background(), arg)
+}
+
+// UploadSessionFinishBatchCheckAPIError is an error-wrapper for the upload_session/finish_batch/check route
 type UploadSessionFinishBatchCheckAPIError struct {
 	dropbox.APIError
 	EndpointError *async.PollError `json:"error"`
 }
 
-func (dbx *apiImpl) UploadSessionFinishBatchCheck(arg *async.PollArg) (res *UploadSessionFinishBatchJobStatus, err error) {
+func (dbx *apiImpl) UploadSessionFinishBatchCheckContext(ctx context.Context, arg *async.PollArg) (res *UploadSessionFinishBatchJobStatus, err error) {
 	req := dropbox.Request{
 		Host:         "api",
 		Namespace:    "files",
@@ -3059,11 +3394,11 @@ func (dbx *apiImpl) UploadSessionFinishBatchCheck(arg *async.PollArg) (res *Uplo
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr UploadSessionFinishBatchCheckAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -3078,13 +3413,17 @@ func (dbx *apiImpl) UploadSessionFinishBatchCheck(arg *async.PollArg) (res *Uplo
 	return
 }
 
-//UploadSessionStartAPIError is an error-wrapper for the upload_session/start route
+func (dbx *apiImpl) UploadSessionFinishBatchCheck(arg *async.PollArg) (res *UploadSessionFinishBatchJobStatus, err error) {
+	return dbx.UploadSessionFinishBatchCheckContext(context.Background(), arg)
+}
+
+// UploadSessionStartAPIError is an error-wrapper for the upload_session/start route
 type UploadSessionStartAPIError struct {
 	dropbox.APIError
 	EndpointError *UploadSessionStartError `json:"error"`
 }
 
-func (dbx *apiImpl) UploadSessionStart(arg *UploadSessionStartArg, content io.Reader) (res *UploadSessionStartResult, err error) {
+func (dbx *apiImpl) UploadSessionStartContext(ctx context.Context, arg *UploadSessionStartArg, content io.Reader) (res *UploadSessionStartResult, err error) {
 	req := dropbox.Request{
 		Host:         "content",
 		Namespace:    "files",
@@ -3097,11 +3436,11 @@ func (dbx *apiImpl) UploadSessionStart(arg *UploadSessionStartArg, content io.Re
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, content)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, content)
 	if err != nil {
 		var appErr UploadSessionStartAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -3116,13 +3455,17 @@ func (dbx *apiImpl) UploadSessionStart(arg *UploadSessionStartArg, content io.Re
 	return
 }
 
-//UploadSessionStartBatchAPIError is an error-wrapper for the upload_session/start_batch route
+func (dbx *apiImpl) UploadSessionStart(arg *UploadSessionStartArg, content io.Reader) (res *UploadSessionStartResult, err error) {
+	return dbx.UploadSessionStartContext(context.Background(), arg, content)
+}
+
+// UploadSessionStartBatchAPIError is an error-wrapper for the upload_session/start_batch route
 type UploadSessionStartBatchAPIError struct {
 	dropbox.APIError
 	EndpointError struct{} `json:"error"`
 }
 
-func (dbx *apiImpl) UploadSessionStartBatch(arg *UploadSessionStartBatchArg) (res *UploadSessionStartBatchResult, err error) {
+func (dbx *apiImpl) UploadSessionStartBatchContext(ctx context.Context, arg *UploadSessionStartBatchArg) (res *UploadSessionStartBatchResult, err error) {
 	req := dropbox.Request{
 		Host:         "api",
 		Namespace:    "files",
@@ -3135,11 +3478,11 @@ func (dbx *apiImpl) UploadSessionStartBatch(arg *UploadSessionStartBatchArg) (re
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr UploadSessionStartBatchAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -3152,6 +3495,10 @@ func (dbx *apiImpl) UploadSessionStartBatch(arg *UploadSessionStartBatchArg) (re
 
 	_ = respBody
 	return
+}
+
+func (dbx *apiImpl) UploadSessionStartBatch(arg *UploadSessionStartBatchArg) (res *UploadSessionStartBatchResult, err error) {
+	return dbx.UploadSessionStartBatchContext(context.Background(), arg)
 }
 
 // New returns a Client implementation for this namespace

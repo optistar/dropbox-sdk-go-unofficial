@@ -21,6 +21,8 @@
 package contacts
 
 import (
+	"context"
+	"errors"
 	"io"
 
 	"github.com/dropbox/dropbox-sdk-go-unofficial/v6/dropbox"
@@ -33,20 +35,22 @@ type Client interface {
 	// keep contacts who are on your team or who you imported. New contacts will
 	// be added when you share.
 	DeleteManualContacts() (err error)
+	DeleteManualContactsContext(ctx context.Context) (err error)
 	// DeleteManualContactsBatch : Removes manually added contacts from the
 	// given list.
 	DeleteManualContactsBatch(arg *DeleteManualContactsArg) (err error)
+	DeleteManualContactsBatchContext(ctx context.Context, arg *DeleteManualContactsArg) (err error)
 }
 
 type apiImpl dropbox.Context
 
-//DeleteManualContactsAPIError is an error-wrapper for the delete_manual_contacts route
+// DeleteManualContactsAPIError is an error-wrapper for the delete_manual_contacts route
 type DeleteManualContactsAPIError struct {
 	dropbox.APIError
 	EndpointError struct{} `json:"error"`
 }
 
-func (dbx *apiImpl) DeleteManualContacts() (err error) {
+func (dbx *apiImpl) DeleteManualContactsContext(ctx context.Context) (err error) {
 	req := dropbox.Request{
 		Host:         "api",
 		Namespace:    "contacts",
@@ -59,11 +63,11 @@ func (dbx *apiImpl) DeleteManualContacts() (err error) {
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr DeleteManualContactsAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -74,13 +78,17 @@ func (dbx *apiImpl) DeleteManualContacts() (err error) {
 	return
 }
 
-//DeleteManualContactsBatchAPIError is an error-wrapper for the delete_manual_contacts_batch route
+func (dbx *apiImpl) DeleteManualContacts() (err error) {
+	return dbx.DeleteManualContactsContext(context.Background())
+}
+
+// DeleteManualContactsBatchAPIError is an error-wrapper for the delete_manual_contacts_batch route
 type DeleteManualContactsBatchAPIError struct {
 	dropbox.APIError
 	EndpointError *DeleteManualContactsError `json:"error"`
 }
 
-func (dbx *apiImpl) DeleteManualContactsBatch(arg *DeleteManualContactsArg) (err error) {
+func (dbx *apiImpl) DeleteManualContactsBatchContext(ctx context.Context, arg *DeleteManualContactsArg) (err error) {
 	req := dropbox.Request{
 		Host:         "api",
 		Namespace:    "contacts",
@@ -93,11 +101,11 @@ func (dbx *apiImpl) DeleteManualContactsBatch(arg *DeleteManualContactsArg) (err
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr DeleteManualContactsBatchAPIError
 		err = auth.ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -106,6 +114,10 @@ func (dbx *apiImpl) DeleteManualContactsBatch(arg *DeleteManualContactsArg) (err
 	_ = resp
 	_ = respBody
 	return
+}
+
+func (dbx *apiImpl) DeleteManualContactsBatch(arg *DeleteManualContactsArg) (err error) {
+	return dbx.DeleteManualContactsBatchContext(context.Background(), arg)
 }
 
 // New returns a Client implementation for this namespace

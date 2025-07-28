@@ -21,7 +21,9 @@
 package auth
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"io"
 
 	"github.com/dropbox/dropbox-sdk-go-unofficial/v6/dropbox"
@@ -32,22 +34,24 @@ type Client interface {
 	// TokenFromOauth1 : Creates an OAuth 2.0 access token from the supplied
 	// OAuth 1.0 access token.
 	TokenFromOauth1(arg *TokenFromOAuth1Arg) (res *TokenFromOAuth1Result, err error)
+	TokenFromOauth1Context(ctx context.Context, arg *TokenFromOAuth1Arg) (res *TokenFromOAuth1Result, err error)
 	// TokenRevoke : Disables the access token used to authenticate the call. If
 	// there is a corresponding refresh token for the access token, this
 	// disables that refresh token, as well as any other access tokens for that
 	// refresh token.
 	TokenRevoke() (err error)
+	TokenRevokeContext(ctx context.Context) (err error)
 }
 
 type apiImpl dropbox.Context
 
-//TokenFromOauth1APIError is an error-wrapper for the token/from_oauth1 route
+// TokenFromOauth1APIError is an error-wrapper for the token/from_oauth1 route
 type TokenFromOauth1APIError struct {
 	dropbox.APIError
 	EndpointError *TokenFromOAuth1Error `json:"error"`
 }
 
-func (dbx *apiImpl) TokenFromOauth1(arg *TokenFromOAuth1Arg) (res *TokenFromOAuth1Result, err error) {
+func (dbx *apiImpl) TokenFromOauth1Context(ctx context.Context, arg *TokenFromOAuth1Arg) (res *TokenFromOAuth1Result, err error) {
 	req := dropbox.Request{
 		Host:         "api",
 		Namespace:    "auth",
@@ -60,11 +64,11 @@ func (dbx *apiImpl) TokenFromOauth1(arg *TokenFromOAuth1Arg) (res *TokenFromOAut
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr TokenFromOauth1APIError
 		err = ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -79,13 +83,17 @@ func (dbx *apiImpl) TokenFromOauth1(arg *TokenFromOAuth1Arg) (res *TokenFromOAut
 	return
 }
 
-//TokenRevokeAPIError is an error-wrapper for the token/revoke route
+func (dbx *apiImpl) TokenFromOauth1(arg *TokenFromOAuth1Arg) (res *TokenFromOAuth1Result, err error) {
+	return dbx.TokenFromOauth1Context(context.Background(), arg)
+}
+
+// TokenRevokeAPIError is an error-wrapper for the token/revoke route
 type TokenRevokeAPIError struct {
 	dropbox.APIError
 	EndpointError struct{} `json:"error"`
 }
 
-func (dbx *apiImpl) TokenRevoke() (err error) {
+func (dbx *apiImpl) TokenRevokeContext(ctx context.Context) (err error) {
 	req := dropbox.Request{
 		Host:         "api",
 		Namespace:    "auth",
@@ -98,11 +106,11 @@ func (dbx *apiImpl) TokenRevoke() (err error) {
 
 	var resp []byte
 	var respBody io.ReadCloser
-	resp, respBody, err = (*dropbox.Context)(dbx).Execute(req, nil)
+	resp, respBody, err = (*dropbox.Context)(dbx).Execute(ctx, req, nil)
 	if err != nil {
 		var appErr TokenRevokeAPIError
 		err = ParseError(err, &appErr)
-		if err == &appErr {
+		if errors.Is(err, &appErr) {
 			err = appErr
 		}
 		return
@@ -111,6 +119,10 @@ func (dbx *apiImpl) TokenRevoke() (err error) {
 	_ = resp
 	_ = respBody
 	return
+}
+
+func (dbx *apiImpl) TokenRevoke() (err error) {
+	return dbx.TokenRevokeContext(context.Background())
 }
 
 // New returns a Client implementation for this namespace
