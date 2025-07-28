@@ -212,7 +212,7 @@ func (c *Context) Execute(ctx context.Context, req Request, body io.Reader) ([]b
 			}
 
 			httpReq.Header.Set("Content-Type", "application/json")
-			httpReq.Body = ioutil.NopCloser(bytes.NewReader(serializedArg))
+			httpReq.Body = io.NopCloser(bytes.NewReader(serializedArg))
 			httpReq.ContentLength = int64(len(serializedArg))
 		case "upload", "download":
 			httpReq.Header.Set("Dropbox-API-Arg", string(serializedArg))
@@ -237,7 +237,7 @@ func (c *Context) Execute(ctx context.Context, req Request, body io.Reader) ([]b
 				return nil, nil, errors.New("Expected body in RPC response, got nil")
 			}
 
-			b, err := ioutil.ReadAll(resp.Body)
+			b, err := io.ReadAll(resp.Body)
 			resp.Body.Close()
 			if err != nil {
 				return nil, nil, err
@@ -250,7 +250,7 @@ func (c *Context) Execute(ctx context.Context, req Request, body io.Reader) ([]b
 		}
 	}
 
-	b, err := ioutil.ReadAll(resp.Body)
+	b, err := io.ReadAll(resp.Body)
 	resp.Body.Close()
 	if err != nil {
 		return nil, nil, err
