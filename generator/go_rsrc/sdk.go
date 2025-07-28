@@ -167,9 +167,9 @@ type Request struct {
 	ExtraHeaders map[string]string
 }
 
-func (c *Context) Execute(req Request, body io.Reader) ([]byte, io.ReadCloser, error) {
+func (c *Context) Execute(ctx context.Context, req Request, body io.Reader) ([]byte, io.ReadCloser, error) {
 	url := c.URLGenerator(req.Host, req.Namespace, req.Route)
-	httpReq, err := http.NewRequest("POST", url, body)
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", url, body)
 	if err != nil {
 		return nil, nil, err
 	}
